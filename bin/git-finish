@@ -1,0 +1,6 @@
+#!/usr/bin/env ruby -U
+$LOAD_PATH.unshift File.join(File.dirname(__FILE__), '..', 'lib')
+
+require 'gh_pivotal_flow'
+
+exit GhPivotalFlow::Finish.new(STDIN, STDOUT, *ARGV).run!
