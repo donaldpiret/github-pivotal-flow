@@ -13,11 +13,12 @@ module GhPivotalFlow
       puts @options
       story = @configuration.story(@project)
       story.can_merge?
+      commit_message = @options[:args].last.dup if @options[:args].last
       if @options[:merge]
-        story.merge_to_root(@options[:args].last.dup, @options)
+        story.merge_to_root(commit_message, @options)
         Git.publish(story.root_branch_name)
       else
-        story.publish_branch(@options[:args].last.dup, @options)
+        story.publish_branch(commit_message, @options)
         create_pull_request(story)
       end
       return 0

@@ -16,11 +16,11 @@ module GhPivotalFlow
     # @param [Boolean] print_messages whether to print messages
     # @return [void]
     def self.create_branch(name, origin_branch_name = nil, options = {})
-      root_branch = origin_branch_name || self.branch_name
+      root_branch = (origin_branch_name || self.branch_name)
       exec "git checkout --quiet #{root_branch}"
 
       root_remote = get_config(KEY_REMOTE, :branch)
-      unless root_remote.blank? || branch_name == root_branch
+      unless root_remote.blank? || name == root_branch
         print "Pulling #{root_branch}... "
         exec "git pull #{root_remote} #{root_branch} --quiet"
         puts 'OK'
@@ -83,15 +83,15 @@ module GhPivotalFlow
       exec "git checkout --quiet #{current_branch}"
     end
 
-    def self.merge(branch_name = nil, commit_message = nil)
-      branch_name ||= self.branch_name
-      exec "git checkout --quiet #{branch_name}"
+    def self.merge(name = nil, commit_message = nil)
+      name ||= self.branch_name
+      exec "git checkout --quiet #{name}"
       target_branch = get_config KEY_ROOT_BRANCH, :branch
       self.pull_remote(target_branch)
       exec "git checkout --quiet #{target_branch}"
       command = "git merge --quiet --no-ff"
       command << " -m \"#{commit_message}\"" if commit_message
-      exec "#{command} #{branch_name}"
+      exec "#{command} #{name}"
       puts 'OK'
     end
 
