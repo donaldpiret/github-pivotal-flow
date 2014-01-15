@@ -19,7 +19,7 @@ module GhPivotalFlow
         Git.publish(story.root_branch_name)
       else
         story.publish_branch(commit_message, @options)
-        create_pull_request(story)
+        story.create_pull_request(commit_message)
       end
       return 0
     end
@@ -37,10 +37,6 @@ module GhPivotalFlow
         opts.on("-m", "--merge", "Merge branch instead of creating a pull request") { options[:merge] = true }
         opts.on_tail("-h", "--help", "This usage guide") { put opts.to_s; exit 0 }
       end.parse!(args)
-    end
-
-    def create_pull_request(story)
-      puts "TODO: create a pull request on github"
     end
   end
 end

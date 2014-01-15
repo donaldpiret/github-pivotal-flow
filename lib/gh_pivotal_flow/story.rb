@@ -94,6 +94,10 @@ module GhPivotalFlow
       Git.delete_branch(branch_name)
     end
 
+    def create_pull_request(commit_message)
+      Shell.exec("git pull-request -m \"#{commit_message}\" -b #{root_branch_name} -h #{branch_name}")
+    end
+
     def set_branch_suffix
       @branch_suffix = ask("Enter branch name (#{branch_prefix}/#{story.id}-<branch-name>): ")
     end
