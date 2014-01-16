@@ -1,5 +1,5 @@
 # The class that encapsulates finishing a Pivotal Tracker Story
-module GhPivotalFlow
+module GithubPivotalFlow
   class Finish < Command
 
     # Finishes a Pivotal Tracker story

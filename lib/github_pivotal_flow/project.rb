@@ -1,4 +1,4 @@
-module GhPivotalFlow
+module GithubPivotalFlow
   class Project < Struct.new(:owner, :name, :host)
     def self.from_url(url)
       _, owner, name = url.path.split('/', 4)

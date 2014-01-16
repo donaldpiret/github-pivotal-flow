@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-module GhPivotalFlow
+module GithubPivotalFlow
   describe Shell do
 
     before do

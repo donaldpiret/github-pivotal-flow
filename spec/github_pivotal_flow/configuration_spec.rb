@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-module GhPivotalFlow
+module GithubPivotalFlow
   describe Configuration do
 
     before do

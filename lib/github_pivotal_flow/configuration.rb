@@ -1,7 +1,7 @@
 require 'highline/import'
 require 'uri'
 
-module GhPivotalFlow
+module GithubPivotalFlow
   # A class that exposes configuration that commands can use
   class Configuration
     def initialize

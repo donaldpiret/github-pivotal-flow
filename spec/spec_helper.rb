@@ -15,7 +15,7 @@
 
 require 'simplecov'
 
-require 'gh_pivotal_flow'
+require 'github_pivotal_flow'
 
 SimpleCov.start do
   add_filter 'spec'

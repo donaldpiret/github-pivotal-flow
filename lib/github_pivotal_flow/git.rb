@@ -1,4 +1,4 @@
-module GhPivotalFlow
+module GithubPivotalFlow
   class Git
     def self.current_branch
       exec('git branch').scan(/\* (.*)/)[0][0]

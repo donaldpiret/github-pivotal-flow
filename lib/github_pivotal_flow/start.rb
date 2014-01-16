@@ -1,6 +1,6 @@
 # The class that encapsulates starting a Pivotal Tracker Story
-module GhPivotalFlow
-  class Start < GhPivotalFlow::Command
+module GithubPivotalFlow
+  class Start < GithubPivotalFlow::Command
     def run!
       filter = @options[:args]
       #TODO: Validate the format of the filter argument
@@ -11,7 +11,7 @@ module GhPivotalFlow
       @configuration.story = story # Tag the branch with story attributes
       Git.add_hook 'prepare-commit-msg', File.join(File.dirname(__FILE__), 'prepare-commit-msg.sh')
       unless story.release?
-        @ghclient = GitHubAPI.new(@configuration, :app_url => 'http://github.com/roomorama/gh-pivotal-flow')
+        @ghclient = GitHubAPI.new(@configuration, :app_url => 'http://github.com/roomorama/github-pivotal-flow')
         create_pull_request_for_story!(story)
       end
       story.mark_started!

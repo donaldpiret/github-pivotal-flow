@@ -1,5 +1,5 @@
 # Utilities for dealing with the shell
-module GhPivotalFlow
+module GithubPivotalFlow
   class Shell
 
     # Executes a command

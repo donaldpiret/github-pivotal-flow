@@ -1,4 +1,4 @@
-module GhPivotalFlow
+module GithubPivotalFlow
   # Client for the GitHub v3 API.
   class GitHubAPI
     attr_reader :config, :oauth_app_url
@@ -226,7 +226,7 @@ module GhPivotalFlow
         else
           # create a new authorization
           res = post auth_url,
-                     :scopes => %w[repo], :note => 'gh-pivotal-flow', :note_url => oauth_app_url do |req|
+                     :scopes => %w[repo], :note => 'github-pivotal-flow', :note_url => oauth_app_url do |req|
             req['X-GitHub-OTP'] = two_factor_code if two_factor_code
           end
           res.error! unless res.success?

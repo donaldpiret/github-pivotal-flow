@@ -1,6 +1,6 @@
 # Github Pivotal Flow
 
-`gh-pivotal-flow` provides a set of additional Git commands to help developers when working with [Pivotal Tracker][pivotal-tracker], git-flow and Github pull requests.
+`github-pivotal-flow` provides a set of additional Git commands to help developers when working with [Pivotal Tracker][pivotal-tracker], git-flow and Github pull requests.
 It follows the branch structure recommended by [git-flow][https://github.com/nvie/gitflow].
 You will need hub installed
 
@@ -8,15 +8,15 @@ You will need hub installed
 
 
 ## Installation
-`gh-pivotal-flow` requires at least **Ruby 1.8.7**, **Git 1.8.2.1** in order to run.  It is tested against Rubies _1.8.7_, _1.9.3_, and _2.0.0_.  In order to install it, do the following:
+`github-pivotal-flow` requires at least **Ruby 1.8.7**, **Git 1.8.2.1** in order to run.  It is tested against Rubies _1.8.7_, _1.9.3_, and _2.0.0_.  In order to install it, do the following:
 
 ```plain
-$ gem install gh-pivotal-flow
+$ gem install github-pivotal-flow
 ```
 
 
 ## Usage
-`gh-pivotal-flow` is intended to be a very lightweight tool, meaning that it won't affect your day to day workflow very much.  To be more specific, it is intended to automate branch creation and destruction as well as story state changes, but will not affect when you commit, when development branches are pushed to origin, etc.  The typical workflow looks something like the following:
+`github-pivotal-flow` is intended to be a very lightweight tool, meaning that it won't affect your day to day workflow very much.  To be more specific, it is intended to automate branch creation and destruction as well as story state changes, but will not affect when you commit, when development branches are pushed to origin, etc.  The typical workflow looks something like the following:
 
 ```plain
 $ git start       # Creates branch and starts story
@@ -30,7 +30,7 @@ $ git finish      # Merges and destroys branch, finishes story, and either pushe
 ## Configuration
 
 ### Git Client
-In order to use `gh-pivotal-flow`, two Git client configuration properties must be set.  If these properties have not been set, you will be prompted for them and your Git configuration will be updated.
+In order to use `github-pivotal-flow`, two Git client configuration properties must be set.  If these properties have not been set, you will be prompted for them and your Git configuration will be updated.
 
 | Name | Description
 | ---- | -----------

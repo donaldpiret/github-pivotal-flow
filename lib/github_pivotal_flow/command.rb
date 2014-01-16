@@ -1,6 +1,6 @@
 # An abstract base class for all commands
 # @abstract Subclass and override {#run} to implement command functionality
-module GhPivotalFlow
+module GithubPivotalFlow
   class Command
 
     attr_reader :options, :configuration

@@ -1,5 +1,5 @@
 # Utilities for dealing with +PivotalTracker::Story+s
-module GhPivotalFlow
+module GithubPivotalFlow
   class Story
     attr_accessor :story, :branch_name, :root_branch_name
 

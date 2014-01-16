@@ -14,13 +14,13 @@
 # limitations under the License.
 
 Gem::Specification.new do |s|
-  s.name        = 'gh-pivotal-flow'
+  s.name        = 'github-pivotal-flow'
   s.version     = '0.0.1'
   s.summary     = 'Git commands for integration with Pivotal Tracker and Github pull requests'
   s.description = 'Provides a set of additional Git commands to help developers when working with Pivotal Tracker and Github pull requests'
   s.authors     = ['Donald Piret']
   s.email       = 'donald@donaldpiret.com'
-  s.homepage    = 'https://github.com/donaldpiret/gh-pivotal-flow'
+  s.homepage    = 'https://github.com/roomorama/github-pivotal-flow'
   s.license     = 'Apache 2.0'
 
   s.files            = %w(LICENSE README.md) + Dir['lib/**/*.rb'] + Dir['lib/**/*.sh'] + Dir['bin/*']
