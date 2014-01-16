@@ -1,9 +1,13 @@
 require 'highline/import'
-
+require 'uri'
 
 module GhPivotalFlow
   # A class that exposes configuration that commands can use
   class Configuration
+    def initialize
+      @github_password_cache = {}
+    end
+
     # Returns the user's Pivotal Tracker API token.  If this token has not been
     # configured, prompts the user for the value.  The value is checked for in
     # the _inherited_ Git configuration, but is stored in the _global_ Git
@@ -53,7 +57,7 @@ module GhPivotalFlow
     # @return [PivotalTracker::Story] the story associated with the current development branch
     def story(project)
       story_id = Git.get_config(KEY_STORY_ID, :branch)
-      Story.new(project.stories.find(story_id.to_i), :branch_name => Git.branch_name)
+      Story.new(project.stories.find(story_id.to_i), :branch_name => Git.current_branch)
     end
 
     # Stores the story associated with the current development branch
@@ -107,7 +111,7 @@ module GhPivotalFlow
     def master_branch
       master_branch = Git.get_config KEY_MASTER_BRANCH, :inherited
 
-      if master_branch.empty?
+      if master_branch.blank?
         master_branch = ask('Please enter your git-flow production branch name: [master]').strip
         master_branch = 'master' if master_branch.nil? || master_branch.empty?
         Git.set_config KEY_MASTER_BRANCH, master_branch, :local
@@ -116,6 +120,106 @@ module GhPivotalFlow
       Git.ensure_branch_exists(master_branch)
 
       master_branch
+    end
+
+    def github_project
+      @github_project ||= Project.from_url(URI(Git.get_config("remote.#{Git.get_remote}.url")))
+    end
+
+    def github_username(host)
+      return ENV['GITHUB_USER'] unless ENV['GITHUB_USER'].to_s.blank?
+      github_username = Git.get_config KEY_GITHUB_USERNAME, :inherited
+      if github_username.blank?
+        github_username = ask('Github username: ').strip
+        Git.set_config KEY_GITHUB_USERNAME, github_username, :local
+      end
+      github_username
+    end
+
+    def github_username=(github_username)
+      Git.set_config KEY_GITHUB_USERNAME, github_username, :local unless github_username.blank?
+    end
+
+    def github_password(host, user)
+      return ENV['GITHUB_PASSWORD'] unless ENV['GITHUB_PASSWORD'].to_s.empty?
+      @github_password_cache["#{user}"] ||= ask_password(user)
+    end
+
+    def github_api_token(host, user)
+      github_token = Git.get_config KEY_GITHUB_API_TOKEN, :inherited
+      if github_token.blank?
+        github_token = yield
+        Git.set_config KEY_GITHUB_API_TOKEN, github_token, :local
+      end
+      github_token
+    end
+
+    # special prompt that has hidden input
+    def ask_password(user)
+      print "Github password for #{user} (never stored): "
+      if $stdin.tty?
+        password = askpass
+        puts ''
+        password
+      else
+        # in testing
+        $stdin.gets.chomp
+      end
+    rescue Interrupt
+      abort
+    end
+
+    def ask_auth_code
+      print "two-factor authentication code: "
+      $stdin.gets.chomp
+    rescue Interrupt
+      abort
+    end
+
+    def askpass
+      noecho $stdin do |input|
+        input.gets.chomp
+      end
+    end
+
+    def noecho io
+      require 'io/console'
+      io.noecho { yield io }
+    rescue LoadError
+      fallback_noecho io
+    end
+
+    def fallback_noecho io
+      tty_state = `stty -g 2>#{NULL}`
+      system 'stty raw -echo -icanon isig' if $?.success?
+      pass = ''
+      while char = getbyte(io) and !(char == 13 or char == 10)
+        if char == 127 or char == 8
+          pass[-1,1] = '' unless pass.empty?
+        else
+          pass << char.chr
+        end
+      end
+      pass
+    ensure
+      system "stty #{tty_state}" unless tty_state.empty?
+    end
+
+    def getbyte(io)
+      if io.respond_to?(:getbyte)
+        io.getbyte
+      else
+        # In Ruby <= 1.8.6, getc behaved the same
+        io.getc
+      end
+    end
+
+    def proxy_uri(with_ssl)
+      env_name = "HTTP#{with_ssl ? 'S' : ''}_PROXY"
+      if proxy = ENV[env_name] || ENV[env_name.downcase] and !proxy.empty?
+        proxy = "http://#{proxy}" unless proxy.include? '://'
+        URI.parse proxy
+      end
     end
 
     private
@@ -127,5 +231,7 @@ module GhPivotalFlow
     KEY_HOTFIX_PREFIX = 'gitflow.prefix.hotfix'.freeze
     KEY_DEVELOPMENT_BRANCH = 'gitflow.branch.develop'.freeze
     KEY_MASTER_BRANCH = 'gitflow.branch.master'.freeze
+    KEY_GITHUB_USERNAME = 'github.username'.freeze
+    KEY_GITHUB_API_TOKEN = 'github.api-token'.freeze
   end
 end

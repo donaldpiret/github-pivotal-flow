@@ -11,6 +11,7 @@ module GhPivotalFlow
     def self.exec(command, abort_on_failure = true)
       result = `#{command}`
       if $?.exitstatus != 0 && abort_on_failure
+        puts "Failed command: #{command}"
         abort 'FAIL'
       end
 

@@ -31,7 +31,6 @@ Gem::Specification.new do |s|
 
   s.add_dependency 'highline', '~> 1.6'
   s.add_dependency 'pivotal-tracker', '~> 0.5'
-  s.add_dependency 'hub', '~> 1.11'
 
   s.add_development_dependency 'bundler', '~> 1.3'
   s.add_development_dependency 'rake', '~> 10.0'

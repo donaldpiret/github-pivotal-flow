@@ -55,7 +55,17 @@ module GhPivotalFlow
     end
 
     def release?
-      self.story.story_type == 'release'
+      story.story_type == 'release'
+    end
+
+    def unestimated?
+      estimate == -1
+    end
+
+    def request_estimation!
+      self.story.update(
+        :estimate => ask('Story is not yet estimated. Please estimate difficulty: ')
+      )
     end
 
     def mark_started!
@@ -67,41 +77,44 @@ module GhPivotalFlow
       puts 'OK'
     end
 
-    def create_branch!
+    def create_branch!(commit_message = nil)
+      commit_message ||= "Starting [#{story.story_type} ##{story.id}]: #{story.name}"
       set_branch_suffix
-      puts "Creating branch for story with branch name #{branch_name} from #{root_branch_name}"
+      print "Creating branch for story with branch name #{branch_name} from #{root_branch_name}... "
       Git.checkout(root_branch_name)
-      root_origin = Git.get_config('remote', :branch)
+      root_origin = Git.get_remote
       Git.pull_remote
       Git.create_branch(branch_name, root_branch_name)
       Git.checkout(branch_name)
       Git.set_config('root-branch', root_branch_name, :branch)
       Git.set_config('root-remote', root_origin, :branch)
+      Git.commit(commit_message: commit_message, allow_empty: true)
       Git.publish(branch_name)
     end
 
     def merge_to_root!(commit_message = nil, options = {})
       commit_message ||= "Merge #{branch_name} to #{root_branch_name}"
-      commit_message << "\n\n[#{options[:no_complete] ? '' : 'Completes '}##{story.id}]"
-      puts "Merging #{branch_name} to #{root_branch_name}... "
+      commit_message << "\n\n[#{options[:no_complete] ? '' : 'Completes '}##{story.id}] "
+      print "Merging #{branch_name} to #{root_branch_name}... "
       Git.checkout(root_branch_name)
       Git.pull_remote(root_branch_name)
-      Git.merge(branch_name, commit_message: commit_message)
+      Git.merge(branch_name, commit_message: commit_message, no_ff: true)
       self.delete_branch!
       Git.publish(root_branch_name)
     end
 
     def merge_release!(commit_message = nil, options = {})
       commit_message ||= "Release #{story.name}"
-      commit_message << "\n\n[#{options[:no_complete] ? '' : 'Completes '}##{story.id}]"
-      puts "Merging #{branch_name} to #{master_branch_name}... "
+      commit_message << "\n\n[#{options[:no_complete] ? '' : 'Completes '}##{story.id}] "
+      print "Merging #{branch_name} to #{master_branch_name}... "
       Git.checkout(master_branch_name)
       Git.pull_remote(master_branch_name)
       Git.merge(master_branch_name, commit_message: commit_message, no_ff: true)
       Git.tag(story.name)
+      print "Merging #{branch_name} to #{root_branch_name}... "
       Git checkout(root_branch_name)
       Git.pull_remote(root_branch_name)
-      Git.merge(branch_name, commit_message: commit_message)
+      Git.merge(branch_name, commit_message: commit_message, no_ff: true)
       Git.checkout(master_branch_name)
       self.delete_branch!
       Git.publish(master_branch_name)
@@ -110,20 +123,20 @@ module GhPivotalFlow
     end
 
     def delete_branch!
-      puts "Deleting #{branch_name}... "
+      print "Deleting #{branch_name}... "
       Git.delete_branch(branch_name)
     end
 
-    def create_pull_request!
-      Shell.exec("hub pull-request -m \"#{self.name}\n\n#{self.description}\" -b #{root_branch_name} -h #{branch_name}")
-    end
+    #def create_pull_request!
+    #  Shell.exec("hub pull-request -m \"#{self.name}\n\n#{self.description}\" -b #{root_branch_name} -h #{branch_name}")
+    #end
 
     def set_branch_suffix
       @branch_suffix = ask("Enter branch name (#{branch_name_from(branch_prefix, story.id, "<branch-name>")}): ")
     end
 
     def branch_name_from(branch_prefix, story_id, branch_name)
-      return "#{branch_prefix}/#{branch_name}" if self.story_type == 'release' # For release branches the format is release/5.0
+      return "#{branch_prefix}/#{branch_name}" if story_type == 'release' # For release branches the format is release/5.0
       n = "#{branch_prefix}/#{story_id}"
       n << "-#{branch_name}" unless branch_name.blank?
     end
@@ -133,7 +146,7 @@ module GhPivotalFlow
     end
 
     def root_branch_name
-      case self.story_type
+      case story_type
       when 'chore'
         'master'
       when 'bug'
@@ -148,7 +161,8 @@ module GhPivotalFlow
     end
 
     def labels
-      @story.labels.split(',').collect(&:strip)
+      return [] if story.labels.blank?
+      story.labels.split(',').collect(&:strip)
     end
 
     def method_missing(m, *args, &block)

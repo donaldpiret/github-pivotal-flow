@@ -13,8 +13,9 @@ module GhPivotalFlow
     end
 
     def self.get_remote
-      remote = get_config('remote', :branch)
-      exec("git remote").strip if remote.blank?
+      remote = get_config('remote', :branch).strip
+      return exec('git remote').strip if remote.blank?
+      remote
     end
 
     def self.pull_remote(branch_name = nil)
@@ -29,6 +30,7 @@ module GhPivotalFlow
     def self.create_branch(branch_name, start_point = nil, options = {})
       return if branch_exists?(branch_name)
       exec "git branch --quiet #{[branch_name, start_point].compact.join(' ')}"
+      puts 'OK'
     end
 
     def self.branch_exists?(name)
@@ -43,8 +45,9 @@ module GhPivotalFlow
     def self.merge(branch_name, options = {})
       command = "git merge --quiet"
       command << " -m \"#{options[:commit_message]}\"" unless options[:commit_message].blank?
-      command << " -no-ff" if options[:no_ff]
-      exec "#{command} #{name}"
+      command << " --no-ff" if options[:no_ff]
+      exec "#{command} #{branch_name}"
+      puts 'OK'
     end
 
     def self.publish(branch_name)
@@ -53,13 +56,20 @@ module GhPivotalFlow
       exec "git push #{self.get_remote} #{branch_name}"
     end
 
+    def self.commit(options = {})
+      command = "git commit --quiet"
+      command << " -m \"#{options[:commit_message]}\"" unless options[:commit_message].blank?
+      command << " --allow-empty" if options[:allow_empty]
+      exec command
+    end
+
     def self.tag(tag_name)
       exec "git tag #{tag_name}"
     end
 
     def self.delete_branch(branch_name, options = {})
       command = "git branch"
-      command << options[:force] ? " -D" : " -d"
+      command << (options[:force] ? " -D" : " -d")
       exec "#{command} #{branch_name}"
       puts 'OK'
     end

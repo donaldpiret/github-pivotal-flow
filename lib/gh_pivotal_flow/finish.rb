@@ -12,7 +12,7 @@ module GhPivotalFlow
     def run!
       story = @configuration.story(@project)
       story.can_merge?
-      commit_message = @options[:args].last.dup if @options[:args].last
+      commit_message = options[:commit_message]
       if story.release?
         story.merge_release!(commit_message, @options)
       else

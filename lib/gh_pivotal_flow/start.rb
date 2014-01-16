@@ -18,16 +18,31 @@ module GhPivotalFlow
       #TODO: Validate the format of the filter argument
       story = Story.select_story @project, filter
       Story.pretty_print story
+      story.request_estimation! if story.unestimated?
       story.create_branch!
       @configuration.story = story # Tag the branch with story attributes
       Git.add_hook 'prepare-commit-msg', File.join(File.dirname(__FILE__), 'prepare-commit-msg.sh')
-      # TODO: If the story difficulty is not yet estimated, ask to fill it in here
+      unless story.release?
+        @ghclient = GitHubAPI.new(@configuration, :app_url => 'http://github.com/roomorama/gh-pivotal-flow')
+        create_pull_request_for_story!(story)
+      end
       story.mark_started!
-      story.create_pull_request! unless story.release?
       return 0
     end
 
     private
+
+    def create_pull_request_for_story!(story)
+      print "Creating pull-request on Github... "
+      @ghclient.create_pullrequest(
+        :project => @configuration.github_project,
+        :base => story.root_branch_name,
+        :head => story.branch_name,
+        :title => story.name,
+        :body => story.description,
+      )
+      puts 'OK'
+    end
 
     def parse_argv(*args)
       OptionParser.new do |opts|

@@ -2,12 +2,13 @@
 
 `gh-pivotal-flow` provides a set of additional Git commands to help developers when working with [Pivotal Tracker][pivotal-tracker], git-flow and Github pull requests.
 It follows the branch structure recommended by [git-flow][https://github.com/nvie/gitflow].
+You will need hub installed
 
 [pivotal-tracker]: http://www.pivotaltracker.com
 
 
 ## Installation
-`gh-pivotal-flow` requires at least **Ruby 1.8.7** and **Git 1.8.2.1** in order to run.  It is tested against Rubies _1.8.7_, _1.9.3_, and _2.0.0_.  In order to install it, do the following:
+`gh-pivotal-flow` requires at least **Ruby 1.8.7**, **Git 1.8.2.1** in order to run.  It is tested against Rubies _1.8.7_, _1.9.3_, and _2.0.0_.  In order to install it, do the following:
 
 ```plain
 $ gem install gh-pivotal-flow
