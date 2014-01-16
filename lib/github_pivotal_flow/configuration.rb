@@ -73,7 +73,7 @@ module GithubPivotalFlow
 
       if feature_prefix.empty?
         feature_prefix = ask('Please enter your git-flow feature branch prefix: [feature]').strip
-        feature_prefix = 'feature' if feature_prefix.nil? || feature_prefix.empty?
+        feature_prefix = 'feature' if feature_prefix.blank?
         Git.set_config KEY_FEATURE_PREFIX, feature_prefix, :local
         puts
       end
@@ -86,12 +86,25 @@ module GithubPivotalFlow
 
       if hotfix_prefix.empty?
         hotfix_prefix = ask('Please enter your git-flow hotfix branch prefix: [hotfix]').strip
-        hotfix_prefix = 'hotfix' if hotfix_prefix.nil? || hotfix_prefix.empty?
+        hotfix_prefix = 'hotfix' if hotfix_prefix.blank?
         Git.set_config KEY_HOTFIX_PREFIX, hotfix_prefix, :local
         puts
       end
 
       hotfix_prefix
+    end
+
+    def release_prefix
+      release_prefix = Git.get_config KEY_RELEASE_PREFIX, :inherited
+
+      if release_prefix.empty?
+        release_prefix = ask('Please enter your git-flow release branch prefix: [release]').strip
+        release_prefix = 'release' if release_prefix.blank?
+        Git.set_config KEY_RELEASE_PREFIX, release_prefix, :local
+        puts
+      end
+
+      release_prefix
     end
 
     def development_branch
@@ -229,6 +242,7 @@ module GithubPivotalFlow
     KEY_STORY_ID = 'pivotal-story-id'.freeze
     KEY_FEATURE_PREFIX = 'gitflow.prefix.feature'.freeze
     KEY_HOTFIX_PREFIX = 'gitflow.prefix.hotfix'.freeze
+    KEY_RELEASE_PREFIX = 'gitflow.prefix.release'.freeze
     KEY_DEVELOPMENT_BRANCH = 'gitflow.branch.develop'.freeze
     KEY_MASTER_BRANCH = 'gitflow.branch.master'.freeze
     KEY_GITHUB_USERNAME = 'github.username'.freeze

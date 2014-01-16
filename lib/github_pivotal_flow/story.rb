@@ -143,9 +143,14 @@ module GithubPivotalFlow
     end
 
     def branch_name_from(branch_prefix, story_id, branch_name)
-      return "#{branch_prefix}/#{branch_name}" if story_type == 'release' # For release branches the format is release/5.0
-      n = "#{branch_prefix}/#{story_id}"
-      n << "-#{branch_name}" unless branch_name.blank?
+      if story_type == 'release'
+        # For release branches the format is release/5.0
+        "#{Git.get_config('gitflow.prefix.release', :inherited)}/#{branch_name}"
+      else
+        n = "#{branch_prefix}/#{story_id}"
+        n << "-#{branch_name}" unless branch_name.blank?
+        n
+      end
     end
 
     def branch_name
@@ -155,16 +160,20 @@ module GithubPivotalFlow
     def root_branch_name
       case story_type
       when 'chore'
-        'master'
+        master_branch_name
       when 'bug'
-        self.labels.include?('hotfix') ? 'master' : 'development'
+        self.labels.include?('hotfix') ? master_branch_name : development_branch_name
       else
-        'development'
+        development_branch_name
       end
     end
 
     def master_branch_name
       Git.get_config('gitflow.branch.master', :inherited)
+    end
+
+    def development_branch_name
+      Git.get_config('gitflow.branch.develop', :inherited)
     end
 
     def labels

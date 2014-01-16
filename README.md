@@ -1,11 +1,12 @@
 # Github Pivotal Flow
 
 `github-pivotal-flow` provides a set of additional Git commands to help developers when working with [Pivotal Tracker][pivotal-tracker], git-flow and Github pull requests.
-It follows the branch structure recommended by [git-flow][https://github.com/nvie/gitflow].
-You will need hub installed
+It follows the branch structure recommended by [Git flow][git-flow].
+
+This is the tool we use internally to speed up our development process.
 
 [pivotal-tracker]: http://www.pivotaltracker.com
-
+[git-flow]: https://github.com/nvie/gitflow
 
 ## Installation
 `github-pivotal-flow` requires at least **Ruby 1.8.7**, **Git 1.8.2.1** in order to run.  It is tested against Rubies _1.8.7_, _1.9.3_, and _2.0.0_.  In order to install it, do the following:
@@ -16,26 +17,33 @@ $ gem install github-pivotal-flow
 
 
 ## Usage
-`github-pivotal-flow` is intended to be a very lightweight tool, meaning that it won't affect your day to day workflow very much.  To be more specific, it is intended to automate branch creation and destruction as well as story state changes, but will not affect when you commit, when development branches are pushed to origin, etc.  The typical workflow looks something like the following:
+`github-pivotal-flow` is intended to vastly speed up your development workflow.
+The typical workflow looks something like the following:
 
 ```plain
-$ git start       # Creates branch and starts story
+$ git start       # Creates branch, opens a pull request on Github and starts story
 $ git commit ...
 $ git commit ...  # Your existing development process
 $ git commit ...
-$ git finish      # Merges and destroys branch, finishes story, and either pushes to origin and opens a pull request; or merges back into the main branch and pushes to origin.
+$ git finish      # Merges back into the main branch. Pushes to origin, destroys branch and finishes story.
 ```
 
 
 ## Configuration
 
 ### Git Client
-In order to use `github-pivotal-flow`, two Git client configuration properties must be set.  If these properties have not been set, you will be prompted for them and your Git configuration will be updated.
+In order to use `github-pivotal-flow`, a few Git client configuration properties must be set.  If these properties have not been set, you will be prompted for them and your Git configuration will be updated.
 
 | Name | Description
 | ---- | -----------
 | `pivotal.api-token` | Your Pivotal Tracker API Token.  This can be found in [your profile][profile] and should be set globally.
 | `pivotal.project-id` | The Pivotal Tracker project id for the repository your are working in.  This can be found in the project's URL and should be set.
+| `gitflow.branch.master` | The Git-flow master branch name. If you've used Git-flow before this will already be set up. Otherwise this is the branch considered 'production'.
+| `gitflow.branch.development` | The Git-flow development branch name. The branch that is commonly used for your development.
+| `gitflow.prefix.feature` | Git-flow feature branch name prefix.
+| `gitflow.prefix.hotfix` | Git-flow hotfix branch name prefix.
+| `gitflow.prefix.feature` | Git-flow feature branch name prefix.
+| `gitflow.prefix.release` | Git-flow release branch name prefix.
 
 [profile]: https://www.pivotaltracker.com/profile
 
