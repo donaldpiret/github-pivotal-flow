@@ -74,6 +74,10 @@ module GhPivotalFlow
       puts 'OK'
     end
 
+    def self.delete_remote_branch(branch_name)
+      exec "git push #{Git.get_remote} --delete #{branch_name}"
+    end
+
     def self.push(*refs)
       remote = self.get_remote
 

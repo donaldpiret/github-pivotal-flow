@@ -125,6 +125,7 @@ module GhPivotalFlow
     def delete_branch!
       print "Deleting #{branch_name}... "
       Git.delete_branch(branch_name)
+      Git.delete_remote_branch(branch_name)
     end
 
     #def create_pull_request!
