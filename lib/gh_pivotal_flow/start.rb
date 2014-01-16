@@ -23,7 +23,7 @@ module GhPivotalFlow
       Git.add_hook 'prepare-commit-msg', File.join(File.dirname(__FILE__), 'prepare-commit-msg.sh')
       # TODO: If the story difficulty is not yet estimated, ask to fill it in here
       story.mark_started!
-      story.create_pull_request!
+      story.create_pull_request! unless story.release?
       return 0
     end
 

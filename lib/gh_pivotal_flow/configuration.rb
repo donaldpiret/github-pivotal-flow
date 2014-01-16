@@ -1,3 +1,6 @@
+require 'highline/import'
+
+
 module GhPivotalFlow
   # A class that exposes configuration that commands can use
   class Configuration

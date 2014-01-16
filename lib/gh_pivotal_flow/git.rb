@@ -1,9 +1,5 @@
 module GhPivotalFlow
   class Git
-
-    # Returns the name of the currently checked out branch
-    #
-    # @return [String] the name of the currently checked out branch
     def self.current_branch
       exec('git branch').scan(/\* (.*)/)[0][0]
     end
@@ -16,14 +12,17 @@ module GhPivotalFlow
       exec "git pull --quiet #{[origin, ref].compact.join(' ')}"
     end
 
+    def self.get_remote
+      remote = get_config('remote', :branch)
+      exec("git remote").strip if remote.blank?
+    end
+
     def self.pull_remote(branch_name = nil)
       prev_branch = self.current_branch
       branch_name ||= self.current_branch
       self.checkout(branch_name)
-      remote = get_config KEY_REMOTE, :branch
-      unless remote.blank?
-        self.pull(branch_name, remote)
-      end
+      remote = self.get_remote
+      self.pull(branch_name, remote) unless remote.blank?
       self.checkout(prev_branch)
     end
 
@@ -32,138 +31,51 @@ module GhPivotalFlow
       exec "git branch --quiet #{[branch_name, start_point].compact.join(' ')}"
     end
 
-    # Creates a branch with a given +name+.  First pulls the current branch to
-    # ensure that it is up to date and then creates and checks out the new
-    # branch.  If specified, sets branch-specific properties that are passed in.
-    #
-    # @param [String] name the name of the branch to create
-    # @param [Boolean] print_messages whether to print messages
-    # @return [void]
-    def self.create_branch(name, origin_branch_name = nil, options = {})
-      root_branch = (origin_branch_name || current_branch)
-      exec "git checkout --quiet #{root_branch}" if root_branch != current_branch
-
-      root_remote = get_config(KEY_REMOTE, :branch)
-      unless root_remote.blank? || name == root_branch
-        print "Pulling #{root_branch}... "
-        exec "git pull #{root_remote} #{root_branch} --quiet"
-        puts 'OK'
-      end
-
-      print "Creating and checking out #{name}... "
-      exec "git checkout --quiet -b #{name}"
-      set_config(KEY_ROOT_BRANCH, root_branch, :branch)
-      set_config(KEY_ROOT_REMOTE, root_remote, :branch) unless root_remote.blank?
-      puts 'OK'
-    end
-
     def self.branch_exists?(name)
       system "git show-ref --quiet --verify refs/heads/#{name}"
     end
 
     def self.ensure_branch_exists(branch_name)
       return if branch_name == current_branch || self.branch_exists?(branch_name)
-      exec("git branch --quiet #{branch_name}", false)
+      exec "git branch --quiet #{branch_name}", false
     end
 
-    # Creates a commit with a given message.  The commit includes all change
-    # files.
-    #
-    # @param [String] message The commit message, which will be appended with
-    #   +[#<story-id]+
-    # @param [PivotalTracker::Story] story the story associated with the current
-    #   commit
-    # @return [void]
-    def self.create_commit(message, story)
-      exec "git commit --quiet --all --allow-empty --message \"#{message}\n\n[##{story.id}]\""
-    end
-
-    # Creates a tag with the given name.  Before creating the tag, commits all
-    # outstanding changes with a commit message that reflects that these changes
-    # are for a release.
-    #
-    # @param [String] name the name of the tag to create
-    # @param [PivotalTracker::Story] story the story associated with the current
-    #   tag
-    # @return [void]
-    def self.create_release_tag(name, story)
-      root_branch = self.current_branch
-
-      print "Creating tag v#{name}... "
-
-      create_branch RELEASE_BRANCH_NAME, nil, false
-      create_commit "#{name} Release", story
-      exec "git tag v#{name}"
-      exec "git checkout --quiet #{root_branch}"
-      exec "git branch --quiet -D #{RELEASE_BRANCH_NAME}"
-
-      puts 'OK'
-    end
-
-
-
-    def self.merge(name = nil, commit_message = nil)
-      name ||= self.current_branch
-      exec "git checkout --quiet #{name}"
-      target_branch = get_config KEY_ROOT_BRANCH, :branch
-      self.pull_remote(target_branch)
-      exec "git checkout --quiet #{target_branch}"
-      command = "git merge --quiet --no-ff"
-      command << " -m \"#{commit_message}\"" if commit_message
+    def self.merge(branch_name, options = {})
+      command = "git merge --quiet"
+      command << " -m \"#{options[:commit_message]}\"" unless options[:commit_message].blank?
+      command << " -no-ff" if options[:no_ff]
       exec "#{command} #{name}"
-      puts 'OK'
-    end
-
-    # Update the branch from it's target branch.
-    # Start by checking out the branch, read the config for the target branch
-    # Check if the target branch has a remote. If so pull down the changes
-    # Then merge the target branch back into the main branch.
-    def self.update(branch_name = nil, commit_message = nil)
-      branch_name ||= self.current_branch
-      exec "git checkout --quiet #{branch_name}"
-      target_branch = get_config KEY_ROOT_BRANCH, :branch
-      self.pull_remote(target_branch)
-      command = "git merge --quiet --no-ff"
-      command << " -m \"#{commit_message}\"" if commit_message
-      exec "#{command} #{target_branch}"
-      puts 'OK'
     end
 
     def self.publish(branch_name)
       branch_name ||= self.current_branch
-      exec "git checkout --quiet #{branch_name}"
-      root_remote = get_config KEY_REMOTE, :branch
-      root_remote = exec("git remote").strip if root_remote.blank?
-      exec "git push #{root_remote} #{branch_name}"
+      exec "git checkout --quiet #{branch_name}" unless branch_name == self.current_branch
+      exec "git push #{self.get_remote} #{branch_name}"
     end
 
-    def self.delete_branch(branch_name)
-      exec "git branch --quiet -D #{branch_name}"
+    def self.tag(tag_name)
+      exec "git tag #{tag_name}"
+    end
+
+    def self.delete_branch(branch_name, options = {})
+      command = "git branch"
+      command << options[:force] ? " -D" : " -d"
+      exec "#{command} #{branch_name}"
       puts 'OK'
     end
 
-    # Push changes to the remote of the current branch
-    #
-    # @param [String] refs the explicit references to push
-    # @return [void]
     def self.push(*refs)
-      remote = get_config KEY_REMOTE, :branch
+      remote = self.get_remote
 
       print "Pushing to #{remote}... "
       exec "git push --quiet #{remote} " + refs.join(' ')
       puts 'OK'
     end
 
-    # Returns a Git configuration value.  This value is read using the +git
-    # config+ command. The scope of the value to read can be controlled with the
-    # +scope+ parameter.
-    #
-    # @param [String] key the key of the configuration to retrieve
-    # @param [:branch, :inherited] scope the scope to read the configuration from
-    #   * +:branch+: equivalent to calling +git config branch.branch-name.key+
-    #   * +:inherited+: equivalent to calling +git config key+
-    # @return [String] the value of the configuration
-    # @raise if the specified scope is not +:branch+ or +:inherited+
+    def self.push_tags
+      exec "git push --tags #{self.get_remote}"
+    end
+
     def self.get_config(key, scope = :inherited)
       if :branch == scope
         exec("git config branch.#{self.current_branch}.#{key}", false).strip
@@ -174,18 +86,6 @@ module GhPivotalFlow
       end
     end
 
-    # Sets a Git configuration value.  This value is set using the +git config+
-    # command.  The scope of the set value can be controlled with the +scope+
-    # parameter.
-    #
-    # @param [String] key the key of configuration to store
-    # @param [String] value the value of the configuration to store
-    # @param [:branch, :global, :local] scope the scope to store the configuration value in.
-    #   * +:branch+: equivalent to calling +git config --local branch.branch-name.key value+
-    #   * +:global+: equivalent to calling +git config --global key value+
-    #   * +:local+:  equivalent to calling +git config --local key value+
-    # @return [void]
-    # @raise if the specified scope is not +:branch+, +:global+, or +:local+
     def self.set_config(key, value, scope = :local)
       if :branch == scope
         exec "git config --local branch.#{self.current_branch}.#{key} #{value}"
@@ -232,10 +132,5 @@ module GhPivotalFlow
     def self.exec(command, abort_on_failure = true)
       return Shell.exec(command, abort_on_failure)
     end
-
-    KEY_REMOTE = 'remote'.freeze
-    KEY_ROOT_BRANCH = 'root-branch'.freeze
-    KEY_ROOT_REMOTE = 'root-remote'.freeze
-    RELEASE_BRANCH_NAME = 'pivotal-tracker-release'.freeze
   end
 end

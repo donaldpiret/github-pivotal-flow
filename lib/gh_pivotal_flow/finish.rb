@@ -13,8 +13,11 @@ module GhPivotalFlow
       story = @configuration.story(@project)
       story.can_merge?
       commit_message = @options[:args].last.dup if @options[:args].last
-      story.merge_to_root!(commit_message, @options) unless options[:no_merge]
-      Git.publish(story.root_branch_name)
+      if story.release?
+        story.merge_release!(commit_message, @options)
+      else
+        story.merge_to_root!(commit_message, @options)
+      end
       return 0
     end
 
@@ -29,7 +32,6 @@ module GhPivotalFlow
         opts.on("-m", "--message=", "Specify a commit message") { |m| options[:commit_message] = m }
 
         opts.on("--no-complete", "Do not mark the story completed on Pivotal Tracker") { options[:no_complete] = true }
-        opts.on("--no-merge", "Do not merge pull request") { options[:no_merge] = true }
         opts.on_tail("-h", "--help", "This usage guide") { put opts.to_s; exit 0 }
       end.parse!(args)
     end

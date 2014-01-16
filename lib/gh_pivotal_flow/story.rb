@@ -54,6 +54,10 @@ module GhPivotalFlow
       @branch_suffix ||= ''
     end
 
+    def release?
+      self.story.story_type == 'release'
+    end
+
     def mark_started!
       print 'Starting story on Pivotal Tracker... '
       self.story.update(
@@ -63,31 +67,46 @@ module GhPivotalFlow
       puts 'OK'
     end
 
-    def mark_finished!
-
-    end
-
     def create_branch!
       set_branch_suffix
       puts "Creating branch for story with branch name #{branch_name} from #{root_branch_name}"
-      Git.pull_remote(root_branch_name)
+      Git.checkout(root_branch_name)
+      root_origin = Git.get_config('remote', :branch)
+      Git.pull_remote
       Git.create_branch(branch_name, root_branch_name)
+      Git.checkout(branch_name)
+      Git.set_config('root-branch', root_branch_name, :branch)
+      Git.set_config('root-remote', root_origin, :branch)
+      Git.publish(branch_name)
     end
 
     def merge_to_root!(commit_message = nil, options = {})
       commit_message ||= "Merge #{branch_name} to #{root_branch_name}"
       commit_message << "\n\n[#{options[:no_complete] ? '' : 'Completes '}##{story.id}]"
       puts "Merging #{branch_name} to #{root_branch_name}... "
-      Git.merge(branch_name, commit_message)
-      self.delete_branch
+      Git.checkout(root_branch_name)
+      Git.pull_remote(root_branch_name)
+      Git.merge(branch_name, commit_message: commit_message)
+      self.delete_branch!
+      Git.publish(root_branch_name)
     end
 
-    def publish_branch!(commit_message = '', options = {})
-      commit_message << "\n\n" if commit_message.length > 0
-      commit_message << "[#{options[:no_complete] ? '' : 'Completes '}##{story.id}]"
-      puts "Updating #{branch_name} and pushing to remote..."
-      Git.update(branch_name, commit_message)
-      Git.publish(branch_name)
+    def merge_release!(commit_message = nil, options = {})
+      commit_message ||= "Release #{story.name}"
+      commit_message << "\n\n[#{options[:no_complete] ? '' : 'Completes '}##{story.id}]"
+      puts "Merging #{branch_name} to #{master_branch_name}... "
+      Git.checkout(master_branch_name)
+      Git.pull_remote(master_branch_name)
+      Git.merge(master_branch_name, commit_message: commit_message, no_ff: true)
+      Git.tag(story.name)
+      Git checkout(root_branch_name)
+      Git.pull_remote(root_branch_name)
+      Git.merge(branch_name, commit_message: commit_message)
+      Git.checkout(master_branch_name)
+      self.delete_branch!
+      Git.publish(master_branch_name)
+      Git.publish(development_branch_name)
+      Git.push_tags
     end
 
     def delete_branch!
@@ -96,19 +115,21 @@ module GhPivotalFlow
     end
 
     def create_pull_request!
-      Shell.exec("git pull-request -m \"#{self.name}\n\n#{self.description}\" -b #{root_branch_name} -h #{branch_name}")
+      Shell.exec("hub pull-request -m \"#{self.name}\n\n#{self.description}\" -b #{root_branch_name} -h #{branch_name}")
     end
 
     def set_branch_suffix
-      @branch_suffix = ask("Enter branch name (#{branch_prefix}/#{story.id}-<branch-name>): ")
+      @branch_suffix = ask("Enter branch name (#{branch_name_from(branch_prefix, story.id, "<branch-name>")}): ")
+    end
+
+    def branch_name_from(branch_prefix, story_id, branch_name)
+      return "#{branch_prefix}/#{branch_name}" if self.story_type == 'release' # For release branches the format is release/5.0
+      n = "#{branch_prefix}/#{story_id}"
+      n << "-#{branch_name}" unless branch_name.blank?
     end
 
     def branch_name
-      return @branch_name if @branch_name
-      branch_name = "#{branch_prefix}/#{story.id}"
-      branch_name << "-#{@branch_suffix}" if @branch_suffix.length > 0
-      puts
-      (@branch_name = branch_name)
+      @branch_name ||= branch_name_from(branch_prefix, story.id, @branch_suffix)
     end
 
     def root_branch_name
@@ -120,6 +141,10 @@ module GhPivotalFlow
       else
         'development'
       end
+    end
+
+    def master_branch_name
+      Git.get_config('gitflow.branch.master', :inherited)
     end
 
     def labels

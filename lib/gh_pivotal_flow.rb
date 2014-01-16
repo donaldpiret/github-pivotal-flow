@@ -22,6 +22,7 @@ require File.join('core_ext', 'object', 'blank')
 
 require File.join('gh_pivotal_flow', 'shell')
 require File.join('gh_pivotal_flow', 'git')
+require File.join('gh_pivotal_flow', 'flow')
 require File.join('gh_pivotal_flow', 'configuration')
 require File.join('gh_pivotal_flow', 'story')
 require File.join('gh_pivotal_flow', 'command')
