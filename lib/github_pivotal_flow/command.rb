@@ -48,10 +48,5 @@ module GithubPivotalFlow
         opts.on_tail("-h", "--help", "This usage guide") { put opts.to_s; exit 0 }
       end.parse!(args)
     end
-
-    def current_branch_name
-      Git.branch_name
-    end
-
   end
 end

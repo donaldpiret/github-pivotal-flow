@@ -31,11 +31,5 @@ module GithubPivotalFlow
 
       @start.run!
     end
-
-    describe "create_branch" do
-      pending
-      #Git.should_receive(:get_config).with('user.name').and_return('test_owner')
-
-    end
   end
 end
