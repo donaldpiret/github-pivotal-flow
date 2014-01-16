@@ -31,7 +31,6 @@ module GithubPivotalFlow
         opts.banner = "Usage: git start <feature|chore|bug|story_id>"
         opts.on("-t", "--api-token=", "Pivotal Tracker API key") { |k| options[:api_token] = k }
         opts.on("-p", "--project-id=", "Pivotal Tracker project id") { |p| options[:project_id] = p }
-        opts.on("-n", "--full-name=", "Your Pivotal Tracker full name") { |n| options[:full_name] = n }
 
         opts.on_tail("-h", "--help", "This usage guide") { put opts.to_s; exit 0 }
       end.parse!(args)

@@ -4,7 +4,8 @@ require 'uri'
 module GithubPivotalFlow
   # A class that exposes configuration that commands can use
   class Configuration
-    def initialize
+    def initialize(options = {})
+      @options = options
       @github_password_cache = {}
     end
 
@@ -15,7 +16,7 @@ module GithubPivotalFlow
     #
     # @return [String] The user's Pivotal Tracker API token
     def api_token
-      api_token =  Git.get_config KEY_API_TOKEN, :inherited
+      api_token = @options[:api_token] || Git.get_config(KEY_API_TOKEN, :inherited)
 
       if api_token.empty?
         api_token = ask('Pivotal API Token (found at https://www.pivotaltracker.com/profile): ').strip
@@ -33,7 +34,7 @@ module GithubPivotalFlow
     #
     # @return [String] The repository's Pivotal Tracker project id
     def project_id
-      project_id = Git.get_config KEY_PROJECT_ID, :inherited
+      project_id = @options[:project_id] || Git.get_config(KEY_PROJECT_ID, :inherited)
 
       if project_id.empty?
         project_id = choose do |menu|

@@ -17,7 +17,7 @@ module GithubPivotalFlow
       @options[:args] = args
 
       @repository_root = Git.repository_root
-      @configuration = Configuration.new
+      @configuration = Configuration.new(@options)
 
       PivotalTracker::Client.token = @configuration.api_token
       PivotalTracker::Client.use_ssl = true
@@ -29,6 +29,7 @@ module GithubPivotalFlow
       @configuration.master_branch
       @configuration.feature_prefix
       @configuration.hotfix_prefix
+      @configuration.release_prefix
     end
 
     # The main entry point to the command's execution
@@ -44,7 +45,6 @@ module GithubPivotalFlow
         opts.banner = "Usage: git start <feature|chore|bug|story_id> | git finish"
         opts.on("-t", "--api-token=", "Pivotal Tracker API key") { |k| options[:api_token] = k }
         opts.on("-p", "--project-id=", "Pivotal Tracker project id") { |p| options[:project_id] = p }
-        opts.on("-n", "--full-name=", "Your Pivotal Tracker full name") { |n| options[:full_name] = n }
         opts.on_tail("-h", "--help", "This usage guide") { put opts.to_s; exit 0 }
       end.parse!(args)
     end

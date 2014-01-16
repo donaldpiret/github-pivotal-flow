@@ -22,7 +22,6 @@ module GithubPivotalFlow
         opts.banner = "Usage: git finish [options]"
         opts.on("-t", "--api-token=", "Pivotal Tracker API key") { |k| options[:api_token] = k }
         opts.on("-p", "--project-id=", "Pivotal Tracker project id") { |p| options[:project_id] = p }
-        opts.on("-n", "--full-name=", "Your Pivotal Tracker full name") { |n| options[:full_name] = n }
         opts.on("-m", "--message=", "Specify a commit message") { |m| options[:commit_message] = m }
 
         opts.on("--no-complete", "Do not mark the story completed on Pivotal Tracker") { options[:no_complete] = true }
