@@ -18,11 +18,12 @@ module GhPivotalFlow
       #TODO: Validate the format of the filter argument
       story = Story.select_story @project, filter
       Story.pretty_print story
-      story.create_branch
-      @configuration.story = story
+      story.create_branch!
+      @configuration.story = story # Tag the branch with story attributes
       Git.add_hook 'prepare-commit-msg', File.join(File.dirname(__FILE__), 'prepare-commit-msg.sh')
       # TODO: If the story difficulty is not yet estimated, ask to fill it in here
       story.mark_started!
+      story.create_pull_request!
       return 0
     end
 

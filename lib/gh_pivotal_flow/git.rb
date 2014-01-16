@@ -4,8 +4,32 @@ module GhPivotalFlow
     # Returns the name of the currently checked out branch
     #
     # @return [String] the name of the currently checked out branch
-    def self.branch_name
+    def self.current_branch
       exec('git branch').scan(/\* (.*)/)[0][0]
+    end
+
+    def self.checkout(branch_name)
+      exec "git checkout --quiet #{branch_name}" unless branch_name == self.current_branch
+    end
+
+    def self.pull(ref, origin)
+      exec "git pull --quiet #{[origin, ref].compact.join(' ')}"
+    end
+
+    def self.pull_remote(branch_name = nil)
+      prev_branch = self.current_branch
+      branch_name ||= self.current_branch
+      self.checkout(branch_name)
+      remote = get_config KEY_REMOTE, :branch
+      unless remote.blank?
+        self.pull(branch_name, remote)
+      end
+      self.checkout(prev_branch)
+    end
+
+    def self.create_branch(branch_name, start_point = nil, options = {})
+      return if branch_exists?(branch_name)
+      exec "git branch --quiet #{[branch_name, start_point].compact.join(' ')}"
     end
 
     # Creates a branch with a given +name+.  First pulls the current branch to
@@ -16,8 +40,8 @@ module GhPivotalFlow
     # @param [Boolean] print_messages whether to print messages
     # @return [void]
     def self.create_branch(name, origin_branch_name = nil, options = {})
-      root_branch = (origin_branch_name || self.branch_name)
-      exec "git checkout --quiet #{root_branch}"
+      root_branch = (origin_branch_name || current_branch)
+      exec "git checkout --quiet #{root_branch}" if root_branch != current_branch
 
       root_remote = get_config(KEY_REMOTE, :branch)
       unless root_remote.blank? || name == root_branch
@@ -33,9 +57,13 @@ module GhPivotalFlow
       puts 'OK'
     end
 
-    def self.ensure_branch_exists(branch)
-      return if self.branch_name == branch
-      exec("git branch --quiet #{branch}", false)
+    def self.branch_exists?(name)
+      system "git show-ref --quiet --verify refs/heads/#{name}"
+    end
+
+    def self.ensure_branch_exists(branch_name)
+      return if branch_name == current_branch || self.branch_exists?(branch_name)
+      exec("git branch --quiet #{branch_name}", false)
     end
 
     # Creates a commit with a given message.  The commit includes all change
@@ -59,7 +87,7 @@ module GhPivotalFlow
     #   tag
     # @return [void]
     def self.create_release_tag(name, story)
-      root_branch = branch_name
+      root_branch = self.current_branch
 
       print "Creating tag v#{name}... "
 
@@ -72,19 +100,10 @@ module GhPivotalFlow
       puts 'OK'
     end
 
-    def self.pull_remote(branch)
-      current_branch = self.branch_name
-      return if branch == current_branch
-      exec "git checkout --quiet #{branch}"
-      remote = get_config KEY_ROOT_REMOTE, :branch
-      unless remote.blank?
-        exec 'git pull --quiet --ff-only'
-      end
-      exec "git checkout --quiet #{current_branch}"
-    end
+
 
     def self.merge(name = nil, commit_message = nil)
-      name ||= self.branch_name
+      name ||= self.current_branch
       exec "git checkout --quiet #{name}"
       target_branch = get_config KEY_ROOT_BRANCH, :branch
       self.pull_remote(target_branch)
@@ -100,7 +119,7 @@ module GhPivotalFlow
     # Check if the target branch has a remote. If so pull down the changes
     # Then merge the target branch back into the main branch.
     def self.update(branch_name = nil, commit_message = nil)
-      branch_name ||= self.branch_name
+      branch_name ||= self.current_branch
       exec "git checkout --quiet #{branch_name}"
       target_branch = get_config KEY_ROOT_BRANCH, :branch
       self.pull_remote(target_branch)
@@ -111,7 +130,7 @@ module GhPivotalFlow
     end
 
     def self.publish(branch_name)
-      branch_name ||= self.branch_name
+      branch_name ||= self.current_branch
       exec "git checkout --quiet #{branch_name}"
       root_remote = get_config KEY_REMOTE, :branch
       root_remote = exec("git remote").strip if root_remote.blank?
@@ -147,7 +166,7 @@ module GhPivotalFlow
     # @raise if the specified scope is not +:branch+ or +:inherited+
     def self.get_config(key, scope = :inherited)
       if :branch == scope
-        exec("git config branch.#{branch_name}.#{key}", false).strip
+        exec("git config branch.#{self.current_branch}.#{key}", false).strip
       elsif :inherited == scope
         exec("git config #{key}", false).strip
       else
@@ -169,7 +188,7 @@ module GhPivotalFlow
     # @raise if the specified scope is not +:branch+, +:global+, or +:local+
     def self.set_config(key, value, scope = :local)
       if :branch == scope
-        exec "git config --local branch.#{branch_name}.#{key} #{value}"
+        exec "git config --local branch.#{self.current_branch}.#{key} #{value}"
       elsif :global == scope
         exec "git config --global #{key} #{value}"
       elsif :local == scope

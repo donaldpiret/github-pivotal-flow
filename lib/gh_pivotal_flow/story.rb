@@ -67,13 +67,14 @@ module GhPivotalFlow
 
     end
 
-    def create_branch
+    def create_branch!
       set_branch_suffix
-      puts "Creating branch for story with branch name #{branch_name} pointing to #{root_branch_name}"
+      puts "Creating branch for story with branch name #{branch_name} from #{root_branch_name}"
+      Git.pull_remote(root_branch_name)
       Git.create_branch(branch_name, root_branch_name)
     end
 
-    def merge_to_root(commit_message = nil, options = {})
+    def merge_to_root!(commit_message = nil, options = {})
       commit_message ||= "Merge #{branch_name} to #{root_branch_name}"
       commit_message << "\n\n[#{options[:no_complete] ? '' : 'Completes '}##{story.id}]"
       puts "Merging #{branch_name} to #{root_branch_name}... "
@@ -81,7 +82,7 @@ module GhPivotalFlow
       self.delete_branch
     end
 
-    def publish_branch(commit_message = '', options = {})
+    def publish_branch!(commit_message = '', options = {})
       commit_message << "\n\n" if commit_message.length > 0
       commit_message << "[#{options[:no_complete] ? '' : 'Completes '}##{story.id}]"
       puts "Updating #{branch_name} and pushing to remote..."
@@ -89,13 +90,13 @@ module GhPivotalFlow
       Git.publish(branch_name)
     end
 
-    def delete_branch
+    def delete_branch!
       puts "Deleting #{branch_name}... "
       Git.delete_branch(branch_name)
     end
 
-    def create_pull_request(commit_message)
-      Shell.exec("git pull-request -m \"#{commit_message}\" -b #{root_branch_name} -h #{branch_name}")
+    def create_pull_request!
+      Shell.exec("git pull-request -m \"#{self.name}\n\n#{self.description}\" -b #{root_branch_name} -h #{branch_name}")
     end
 
     def set_branch_suffix

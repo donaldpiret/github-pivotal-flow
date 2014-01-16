@@ -10,17 +10,11 @@ module GhPivotalFlow
     #
     # @return [void]
     def run!
-      puts @options
       story = @configuration.story(@project)
       story.can_merge?
       commit_message = @options[:args].last.dup if @options[:args].last
-      if @options[:merge]
-        story.merge_to_root(commit_message, @options)
-        Git.publish(story.root_branch_name)
-      else
-        story.publish_branch(commit_message, @options)
-        story.create_pull_request(commit_message)
-      end
+      story.merge_to_root!(commit_message, @options) unless options[:no_merge]
+      Git.publish(story.root_branch_name)
       return 0
     end
 
@@ -32,9 +26,10 @@ module GhPivotalFlow
         opts.on("-t", "--api-token=", "Pivotal Tracker API key") { |k| options[:api_token] = k }
         opts.on("-p", "--project-id=", "Pivotal Tracker project id") { |p| options[:project_id] = p }
         opts.on("-n", "--full-name=", "Your Pivotal Tracker full name") { |n| options[:full_name] = n }
+        opts.on("-m", "--message=", "Specify a commit message") { |m| options[:commit_message] = m }
 
-        opts.on("-c", "--no-complete", "Do not mark the story completed on Pivotal Tracker") { options[:no_complete] = true }
-        opts.on("-m", "--merge", "Merge branch instead of creating a pull request") { options[:merge] = true }
+        opts.on("--no-complete", "Do not mark the story completed on Pivotal Tracker") { options[:no_complete] = true }
+        opts.on("--no-merge", "Do not merge pull request") { options[:no_merge] = true }
         opts.on_tail("-h", "--help", "This usage guide") { put opts.to_s; exit 0 }
       end.parse!(args)
     end

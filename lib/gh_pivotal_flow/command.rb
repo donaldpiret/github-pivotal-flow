@@ -41,12 +41,10 @@ module GhPivotalFlow
 
     def parse_argv(*args)
       OptionParser.new do |opts|
-        opts.banner = "Usage: git start <feature|chore|bug|story_id>"
+        opts.banner = "Usage: git start <feature|chore|bug|story_id> | git finish"
         opts.on("-t", "--api-token=", "Pivotal Tracker API key") { |k| options[:api_token] = k }
         opts.on("-p", "--project-id=", "Pivotal Tracker project id") { |p| options[:project_id] = p }
         opts.on("-n", "--full-name=", "Your Pivotal Tracker full name") { |n| options[:full_name] = n }
-
-        opts.on("-m", "--merge", "Merge branch instead of creating a pull request") { options[:merge] = true }
         opts.on_tail("-h", "--help", "This usage guide") { put opts.to_s; exit 0 }
       end.parse!(args)
     end
