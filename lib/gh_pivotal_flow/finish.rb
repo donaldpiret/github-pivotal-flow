@@ -2,13 +2,7 @@
 module GhPivotalFlow
   class Finish < Command
 
-    # Finishes a Pivotal Tracker story by doing the following steps:
-    # * Check that the pending merge will be trivial
-    # * Merge the development branch into the root branch
-    # * Delete the development branch
-    # * Push changes to remote
-    #
-    # @return [void]
+    # Finishes a Pivotal Tracker story
     def run!
       story = @configuration.story(@project)
       story.can_merge?

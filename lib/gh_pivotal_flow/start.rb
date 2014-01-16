@@ -1,18 +1,6 @@
 # The class that encapsulates starting a Pivotal Tracker Story
 module GhPivotalFlow
   class Start < GhPivotalFlow::Command
-
-    # Starts a Pivotal Tracker story by doing the following steps:
-    # * Create a branch
-    # * Add default commit hook
-    # * Start the story on Pivotal Tracker
-    #
-    # @param [String, nil] filter a filter for selecting the story to start.  This
-    #   filter can be either:
-    #   * a story id
-    #   * a story type (feature, bug, chore)
-    #   * +nil+
-    # @return [void]
     def run!
       filter = @options[:args]
       #TODO: Validate the format of the filter argument
@@ -34,13 +22,7 @@ module GhPivotalFlow
 
     def create_pull_request_for_story!(story)
       print "Creating pull-request on Github... "
-      @ghclient.create_pullrequest(
-        :project => @configuration.github_project,
-        :base => story.root_branch_name,
-        :head => story.branch_name,
-        :title => story.name,
-        :body => story.description,
-      )
+      @ghclient.create_pullrequest({:project => @configuration.github_project}.merge(story.params_for_pull_request))
       puts 'OK'
     end
 

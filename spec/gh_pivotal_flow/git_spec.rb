@@ -11,7 +11,7 @@ module GhPivotalFlow
     it 'should return the current branch name' do
       Shell.should_receive(:exec).with('git branch', true).and_return("   master\n * dev_branch")
 
-      current_branch = Git.branch_name
+      current_branch = Git.current_branch
 
       expect(current_branch).to eq('dev_branch')
     end
@@ -44,7 +44,7 @@ module GhPivotalFlow
     end
 
     it 'should get configuration when :branch scope is specified' do
-      Git.should_receive(:branch_name).and_return('test_branch_name')
+      Git.should_receive(:current_branch).and_return('test_branch_name')
       Shell.should_receive(:exec).with('git config branch.test_branch_name.test_key', false).and_return('test_value')
 
       value = Git.get_config 'test_key', :branch
@@ -65,7 +65,7 @@ module GhPivotalFlow
     end
 
     it 'should set configuration when :branch scope is specified' do
-      Git.should_receive(:branch_name).and_return('test_branch_name')
+      Git.should_receive(:current_branch).and_return('test_branch_name')
       Shell.should_receive(:exec).with('git config --local branch.test_branch_name.test_key test_value', true)
 
       Git.set_config 'test_key', 'test_value', :branch
@@ -88,12 +88,8 @@ module GhPivotalFlow
     end
 
     it 'should create a branch and set the root_branch and root_remote properties on it' do
-      Git.stub(:branch_name).and_return('master')
-      Git.should_receive(:get_config).with('remote', :branch).and_return('origin')
-      Shell.should_receive(:exec).with('git pull origin master --quiet', true)
-      Shell.should_receive(:exec).exactly(2).times.and_return('git checkout --quiet -b dev_branch')
-      Git.should_receive(:set_config).with('root-branch', 'master', :branch)
-      Git.should_receive(:set_config).with('root-remote', 'origin', :branch)
+      Git.stub(:current_branch).and_return('master')
+      Shell.should_receive(:exec).with('git branch --quiet dev_branch', true)
 
       Git.create_branch 'dev_branch'
     end
@@ -137,15 +133,9 @@ module GhPivotalFlow
     end
 
     it 'should merge and delete branches' do
-      Git.should_receive(:branch_name).and_return('development_branch')
-      Git.should_receive(:get_config).with('root-remote', :branch).and_return('origin')
-      Git.should_receive(:get_config).with('root-branch', :branch).and_return('master')
-      Shell.should_receive(:exec).exactly(2).times.with('git checkout --quiet development_branch', true)
-      Shell.should_receive(:exec).with('git pull --quiet --ff-only', true)
-      Shell.should_receive(:exec).exactly(2).with('git checkout --quiet master', true)
       Shell.should_receive(:exec).with("git merge --quiet --no-ff -m \"Merge development_branch to master\" development_branch", true)
 
-      Git.merge 'development_branch', 'Merge development_branch to master'
+      Git.merge 'development_branch', commit_message: 'Merge development_branch to master', no_ff: true
     end
 
     it 'should push changes without refs' do
@@ -163,22 +153,15 @@ module GhPivotalFlow
     end
 
     it 'should create a commit' do
-      story = PivotalTracker::Story.new(:id => 123456789)
-      Shell.should_receive(:exec).with("git commit --quiet --all --allow-empty --message \"test_message\n\n[#123456789]\"", true)
+      Shell.should_receive(:exec).with("git commit --quiet --allow-empty -m \"test_message\"", true)
 
-      Git.create_commit 'test_message', story
+      Git.commit commit_message: 'test_message', allow_empty: true
     end
 
-    it 'should create a release tag' do
-      story = PivotalTracker::Story.new(:id => 123456789)
-      Git.should_receive(:branch_name).and_return('master')
-      Git.should_receive(:create_branch).with('pivotal-tracker-release', nil, false)
-      Git.should_receive(:create_commit).with('1.0.0.RELEASE Release', story)
-      Shell.should_receive(:exec).with('git tag v1.0.0.RELEASE', true)
-      Shell.should_receive(:exec).with('git checkout --quiet master', true)
-      Shell.should_receive(:exec).with('git branch --quiet -D pivotal-tracker-release', true)
+    it 'should create a tag' do
+      Shell.should_receive(:exec).with('git tag 1.0.0.RELEASE', true)
 
-      Git.create_release_tag '1.0.0.RELEASE', story
+      Git.tag '1.0.0.RELEASE'
     end
   end
 end

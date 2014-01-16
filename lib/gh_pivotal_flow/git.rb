@@ -44,8 +44,8 @@ module GhPivotalFlow
 
     def self.merge(branch_name, options = {})
       command = "git merge --quiet"
-      command << " -m \"#{options[:commit_message]}\"" unless options[:commit_message].blank?
       command << " --no-ff" if options[:no_ff]
+      command << " -m \"#{options[:commit_message]}\"" unless options[:commit_message].blank?
       exec "#{command} #{branch_name}"
       puts 'OK'
     end
@@ -58,8 +58,8 @@ module GhPivotalFlow
 
     def self.commit(options = {})
       command = "git commit --quiet"
-      command << " -m \"#{options[:commit_message]}\"" unless options[:commit_message].blank?
       command << " --allow-empty" if options[:allow_empty]
+      command << " -m \"#{options[:commit_message]}\"" unless options[:commit_message].blank?
       exec command
     end
 

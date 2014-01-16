@@ -165,6 +165,15 @@ module GhPivotalFlow
       story.labels.split(',').collect(&:strip)
     end
 
+    def params_for_pull_request
+      {
+        :base => root_branch_name,
+        :head => branch_name,
+        :title => name,
+        :body => description,
+      }
+    end
+
     def method_missing(m, *args, &block)
       return @story.send(m, *args, &block)
     end

@@ -16,10 +16,20 @@ module GhPivotalFlow
       @finish = Finish.new
     end
 
-    it 'should publish the branch by default' do
+    it 'merges the branch back to its root by default' do
       Configuration.any_instance.should_receive(:story).and_return(@story)
+      @story.should_receive(:release?).and_return(false)
       @story.should_receive(:can_merge?).and_return(true)
-      @story.should_receive(:publish_branch)
+      @story.should_receive(:merge_to_root!)
+
+      @finish.run!
+    end
+
+    it 'merges as a release instead if it is a release branch' do
+      Configuration.any_instance.should_receive(:story).and_return(@story)
+      @story.should_receive(:release?).and_return(true)
+      @story.should_receive(:can_merge?).and_return(true)
+      @story.should_receive(:merge_release!)
 
       @finish.run!
     end
