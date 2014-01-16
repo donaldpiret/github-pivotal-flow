@@ -101,6 +101,7 @@ module GithubPivotalFlow
       Git.merge(branch_name, commit_message: commit_message, no_ff: true)
       self.delete_branch!
       Git.publish(root_branch_name)
+      self.cleanup!
     end
 
     def merge_release!(commit_message = nil, options = {})
@@ -120,11 +121,16 @@ module GithubPivotalFlow
       Git.publish(master_branch_name)
       Git.publish(development_branch_name)
       Git.push_tags
+      self.cleanup!
     end
 
     def delete_branch!
       print "Deleting #{branch_name}... "
       Git.delete_branch(branch_name)
+      puts 'OK'
+    end
+
+    def cleanup!
       Git.delete_remote_branch(branch_name)
     end
 
