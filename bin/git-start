@@ -3,4 +3,4 @@ $LOAD_PATH.unshift File.join(File.dirname(__FILE__), '..', 'lib')
 
 require 'github_pivotal_flow'
 
-exit GithubPivotalFlow::Start.new(STDIN, STDOUT, *ARGV).run!
+exit GithubPivotalFlow::Start.new(*ARGV).run!

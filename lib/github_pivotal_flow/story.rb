@@ -263,15 +263,13 @@ module GithubPivotalFlow
     def branch_prefix
       case self.story_type
       when 'feature'
-        'feature'
+        Git.get_config('gitflow.prefix.feature', :inherited)
       when 'bug'
-        self.labels.include?('hotfix') ? 'hotfix' : 'feature'
+        self.labels.include?('hotfix') ? Git.get_config('gitflow.prefix.hotfix', :inherited) : Git.get_config('gitflow.prefix.feature', :inherited)
       when 'release'
-        'release'
-      when 'chore'
-        'chore'
+        Git.get_config('gitflow.prefix.release', :inherited)
       else
-        'misc'
+        'misc/'
       end
     end
   end
