@@ -145,9 +145,9 @@ module GithubPivotalFlow
     def branch_name_from(branch_prefix, story_id, branch_name)
       if story_type == 'release'
         # For release branches the format is release/5.0
-        "#{Git.get_config('gitflow.prefix.release', :inherited)}/#{branch_name}"
+        "#{Git.get_config('gitflow.prefix.release', :inherited)}#{branch_name}"
       else
-        n = "#{branch_prefix}/#{story_id}"
+        n = "#{branch_prefix}#{story_id}"
         n << "-#{branch_name}" unless branch_name.blank?
         n
       end

@@ -14,7 +14,7 @@ module GithubPivotalFlow
     def initialize(*args)
       @options = {}
       args = parse_argv(*args)
-      @options[:args] = args
+      _, _, @options[:args] = args
 
       @repository_root = Git.repository_root
       @configuration = Configuration.new(@options)

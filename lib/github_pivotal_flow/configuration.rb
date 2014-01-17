@@ -73,8 +73,9 @@ module GithubPivotalFlow
       feature_prefix = Git.get_config KEY_FEATURE_PREFIX, :inherited
 
       if feature_prefix.empty?
-        feature_prefix = ask('Please enter your git-flow feature branch prefix: [feature]').strip
-        feature_prefix = 'feature' if feature_prefix.blank?
+        feature_prefix = ask('Please enter your git-flow feature branch prefix: [feature/]').strip
+        feature_prefix = 'feature/' if feature_prefix.blank?
+        feature_prefix = "#{feature_prefix}/" unless feature_prefix[-1,1] == '/'
         Git.set_config KEY_FEATURE_PREFIX, feature_prefix, :local
         puts
       end
@@ -86,8 +87,9 @@ module GithubPivotalFlow
       hotfix_prefix = Git.get_config KEY_HOTFIX_PREFIX, :inherited
 
       if hotfix_prefix.empty?
-        hotfix_prefix = ask('Please enter your git-flow hotfix branch prefix: [hotfix]').strip
-        hotfix_prefix = 'hotfix' if hotfix_prefix.blank?
+        hotfix_prefix = ask('Please enter your git-flow hotfix branch prefix: [hotfix/]').strip
+        hotfix_prefix = 'hotfix/' if hotfix_prefix.blank?
+        hotfix_prefix = "#{hotfix_prefix}/" unless hotfix_prefix[-1,1] == '/'
         Git.set_config KEY_HOTFIX_PREFIX, hotfix_prefix, :local
         puts
       end
@@ -99,8 +101,9 @@ module GithubPivotalFlow
       release_prefix = Git.get_config KEY_RELEASE_PREFIX, :inherited
 
       if release_prefix.empty?
-        release_prefix = ask('Please enter your git-flow release branch prefix: [release]').strip
+        release_prefix = ask('Please enter your git-flow release branch prefix: [release/]').strip
         release_prefix = 'release' if release_prefix.blank?
+        release_prefix = "#{release_prefix}/" unless release_prefix[-1,1] == '/'
         Git.set_config KEY_RELEASE_PREFIX, release_prefix, :local
         puts
       end

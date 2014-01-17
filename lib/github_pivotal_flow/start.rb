@@ -3,6 +3,7 @@ module GithubPivotalFlow
   class Start < GithubPivotalFlow::Command
     def run!
       filter = @options[:args]
+      puts "Filter: #{filter.inspect}"
       #TODO: Validate the format of the filter argument
       story = Story.select_story @project, filter
       Story.pretty_print story
