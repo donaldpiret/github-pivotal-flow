@@ -15,7 +15,7 @@
 
 Gem::Specification.new do |s|
   s.name        = 'github-pivotal-flow'
-  s.version     = '0.0.4'
+  s.version     = '0.0.5'
   s.summary     = 'Git commands for integration with Pivotal Tracker and Github pull requests'
   s.description = 'Provides a set of additional Git commands to help developers when working with Pivotal Tracker and Github pull requests'
   s.authors     = ['Donald Piret']
