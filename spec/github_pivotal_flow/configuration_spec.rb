@@ -66,5 +66,15 @@ module GithubPivotalFlow
 
       expect(result).to be_a(Story)
     end
+
+    describe 'github_project' do
+      it 'supports working with git urls from the configuration' do
+        Git.should_receive(:get_remote).and_return('origin')
+        Git.should_receive(:get_config).with('remote.origin.url').and_return('git@github.com:roomorama/github-pivotal-flow.git')
+        github_project = @configuration.github_project
+        expect(github_project.owner).to eq('roomorama')
+        expect(github_project.name).to eq('github-pivotal-flow')
+      end
+    end
   end
 end

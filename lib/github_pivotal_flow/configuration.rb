@@ -140,7 +140,7 @@ module GithubPivotalFlow
     end
 
     def github_project
-      @github_project ||= Project.from_url(URI(Git.get_config("remote.#{Git.get_remote}.url")))
+      @github_project ||= Project.from_url(Git.get_config("remote.#{Git.get_remote}.url"))
     end
 
     def github_username(host)
