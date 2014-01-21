@@ -78,8 +78,8 @@ module GithubPivotalFlow
     end
 
     def create_branch!(commit_message = nil, options = {})
-      commit_message ||= "Starting [#{story.story_type} ##{story.id}][skip ci]: #{story.name}"
-      set_branch_suffix
+      commit_message ||= "Starting [#{story.story_type} ##{story.id}]: #{story.name}"
+      commit_message << " [skip ci]" unless options[:run_ci]
       print "Creating branch for story with branch name #{branch_name} from #{root_branch_name}... "
       Git.checkout(root_branch_name)
       root_origin = Git.get_remote
@@ -89,7 +89,7 @@ module GithubPivotalFlow
       Git.set_config('root-branch', root_branch_name, :branch)
       Git.set_config('root-remote', root_origin, :branch)
       Git.commit(commit_message: commit_message, allow_empty: true)
-      Git.publish(branch_name, set_upstream: true)
+      Git.push(branch_name, set_upstream: true)
     end
 
     def merge_to_root!(commit_message = nil, options = {})
@@ -100,7 +100,7 @@ module GithubPivotalFlow
       Git.pull_remote(root_branch_name)
       Git.merge(branch_name, commit_message: commit_message, no_ff: true)
       self.delete_branch!
-      Git.publish(root_branch_name)
+      Git.push(root_branch_name)
       self.cleanup!
     end
 
@@ -118,8 +118,7 @@ module GithubPivotalFlow
       Git.merge(branch_name, commit_message: commit_message, no_ff: true)
       Git.checkout(master_branch_name)
       self.delete_branch!
-      Git.publish(master_branch_name)
-      Git.publish(development_branch_name)
+      Git.push(master_branch_name, root_branch_name)
       Git.push_tags
       self.cleanup!
     end
@@ -138,8 +137,12 @@ module GithubPivotalFlow
     #  Shell.exec("hub pull-request -m \"#{self.name}\n\n#{self.description}\" -b #{root_branch_name} -h #{branch_name}")
     #end
 
-    def set_branch_suffix
-      @branch_suffix = ask("Enter branch name (#{branch_name_from(branch_prefix, story.id, "<branch-name>")}): ")
+    def branch_name
+      @branch_name ||= branch_name_from(branch_prefix, story.id, branch_suffix)
+    end
+
+    def branch_suffix
+      @branch_suffix ||= ask("Enter branch name (#{branch_name_from(branch_prefix, story.id, "<branch-name>")}): ")
     end
 
     def branch_name_from(branch_prefix, story_id, branch_name)
@@ -151,10 +154,6 @@ module GithubPivotalFlow
         n << "-#{branch_name}" unless branch_name.blank?
         n
       end
-    end
-
-    def branch_name
-      @branch_name ||= branch_name_from(branch_prefix, story.id, @branch_suffix)
     end
 
     def root_branch_name

@@ -13,119 +13,137 @@ module GithubPivotalFlow
       @menu = double('menu')
     end
 
-    it 'should pretty print story information' do
-      story = double('story')
-      story.should_receive(:name)
-      story.should_receive(:description).and_return("description-1\ndescription-2")
-      PivotalTracker::Note.should_receive(:all).and_return([
-                                                               PivotalTracker::Note.new(:noted_at => Date.new, :text => 'note-1')
-                                                           ])
+    describe '.pretty_print' do
+      it 'pretty-prints story information' do
+        story = double('story')
+        story.should_receive(:name)
+        story.should_receive(:description).and_return("description-1\ndescription-2")
+        PivotalTracker::Note.should_receive(:all).and_return([
+                                                                 PivotalTracker::Note.new(:noted_at => Date.new, :text => 'note-1')
+                                                             ])
 
-      Story.pretty_print story
+        Story.pretty_print story
 
-      expect($stdout.string).to eq(
-                                    "      Title: \n" +
-                                        "Description: description-1\n" +
-                                        "             description-2\n" +
-                                        "     Note 1: note-1\n" +
-                                        "\n")
+        expect($stdout.string).to eq(
+                                      "      Title: \n" +
+                                          "Description: description-1\n" +
+                                          "             description-2\n" +
+                                          "     Note 1: note-1\n" +
+                                          "\n")
+      end
+
+      it 'does not pretty print description or notes if there are none (empty)' do
+        story = double('story')
+        story.should_receive(:name)
+        story.should_receive(:description)
+        PivotalTracker::Note.should_receive(:all).and_return([])
+
+        Story.pretty_print story
+
+        expect($stdout.string).to eq(
+                                      "      Title: \n" +
+                                          "\n")
+      end
+
+      it 'does not pretty print description or notes if there are none (nil)' do
+        story = double('story')
+        story.should_receive(:name)
+        story.should_receive(:description).and_return('')
+        PivotalTracker::Note.should_receive(:all).and_return([])
+
+        Story.pretty_print story
+
+        expect($stdout.string).to eq(
+                                      "      Title: \n" +
+                                          "\n")
+      end
     end
 
-    it 'should not pretty print description or notes if there are none (empty)' do
-      story = double('story')
-      story.should_receive(:name)
-      story.should_receive(:description)
-      PivotalTracker::Note.should_receive(:all).and_return([])
+    describe '.select_story' do
+      it 'selects a story directly if the filter is a number' do
+        @project.should_receive(:stories).and_return(@stories)
+        @stories.should_receive(:find).with(12345678).and_return(@story)
 
-      Story.pretty_print story
+        story = Story.select_story @project, '12345678'
 
-      expect($stdout.string).to eq(
-                                    "      Title: \n" +
-                                        "\n")
-    end
+        expect(story).to be_a(Story)
+        expect(story.story).to be(@story)
+      end
 
-    it 'should not pretty print description or notes if there are none (nil)' do
-      story = double('story')
-      story.should_receive(:name)
-      story.should_receive(:description).and_return('')
-      PivotalTracker::Note.should_receive(:all).and_return([])
+      it 'selects a story if the result of the query is a single story' do
+        @project.should_receive(:stories).and_return(@stories)
+        @stories.should_receive(:all).with(
+            :current_state => %w(rejected unstarted unscheduled),
+            :limit => 1,
+            :story_type => 'release'
+        ).and_return([@story])
 
-      Story.pretty_print story
+        story = Story.select_story @project, 'release', 1
 
-      expect($stdout.string).to eq(
-                                    "      Title: \n" +
-                                        "\n")
-    end
+        expect(story).to be_a(Story)
+        expect(story.story).to be(@story)
+      end
 
-    it 'should select a story directly if the filter is a number' do
-      @project.should_receive(:stories).and_return(@stories)
-      @stories.should_receive(:find).with(12345678).and_return(@story)
+      it 'prompts the user for a story if the result of the query is more than a single story' do
+        @project.should_receive(:stories).and_return(@stories)
+        @stories.should_receive(:all).with(
+            :current_state => %w(rejected unstarted unscheduled),
+            :limit => 5,
+            :story_type => 'feature'
+        ).and_return([
+                         PivotalTracker::Story.new(:name => 'name-1'),
+                         PivotalTracker::Story.new(:name => 'name-2')
+                     ])
+        @menu.should_receive(:prompt=)
+        @menu.should_receive(:choice).with('name-1')
+        @menu.should_receive(:choice).with('name-2')
+        Story.should_receive(:choose) { |&arg| arg.call @menu }.and_return(@story)
 
-      story = Story.select_story @project, '12345678'
+        story = Story.select_story @project, 'feature'
 
-      expect(story).to be_a(Story)
-      expect(story.story).to be(@story)
-    end
+        expect(story).to be_a(Story)
+        expect(story.story).to be(@story)
+      end
 
-    it 'should select a story if the result of the query is a single story' do
-      @project.should_receive(:stories).and_return(@stories)
-      @stories.should_receive(:all).with(
-          :current_state => %w(rejected unstarted unscheduled),
-          :limit => 1,
-          :story_type => 'release'
-      ).and_return([@story])
+      it 'prompts the user with the story type if no filter is specified' do
+        @project.should_receive(:stories).and_return(@stories)
+        @stories.should_receive(:all).with(
+            :current_state => %w(rejected unstarted unscheduled),
+            :limit => 5
+        ).and_return([
+                         PivotalTracker::Story.new(:story_type => 'chore', :name => 'name-1'),
+                         PivotalTracker::Story.new(:story_type => 'bug', :name => 'name-2')
+                     ])
+        @menu.should_receive(:prompt=)
+        @menu.should_receive(:choice).with('CHORE   name-1')
+        @menu.should_receive(:choice).with('BUG     name-2')
+        Story.should_receive(:choose) { |&arg| arg.call @menu }.and_return(@story)
 
-      story = Story.select_story @project, 'release', 1
+        story = Story.select_story @project
 
-      expect(story).to be_a(Story)
-      expect(story.story).to be(@story)
-    end
-
-    it 'should prompt the user for a story if the result of the query is more than a single story' do
-      @project.should_receive(:stories).and_return(@stories)
-      @stories.should_receive(:all).with(
-          :current_state => %w(rejected unstarted unscheduled),
-          :limit => 5,
-          :story_type => 'feature'
-      ).and_return([
-                       PivotalTracker::Story.new(:name => 'name-1'),
-                       PivotalTracker::Story.new(:name => 'name-2')
-                   ])
-      @menu.should_receive(:prompt=)
-      @menu.should_receive(:choice).with('name-1')
-      @menu.should_receive(:choice).with('name-2')
-      Story.should_receive(:choose) { |&arg| arg.call @menu }.and_return(@story)
-
-      story = Story.select_story @project, 'feature'
-
-      expect(story).to be_a(Story)
-      expect(story.story).to be(@story)
-    end
-
-    it 'should prompt the user with the story type if no filter is specified' do
-      @project.should_receive(:stories).and_return(@stories)
-      @stories.should_receive(:all).with(
-          :current_state => %w(rejected unstarted unscheduled),
-          :limit => 5
-      ).and_return([
-                       PivotalTracker::Story.new(:story_type => 'chore', :name => 'name-1'),
-                       PivotalTracker::Story.new(:story_type => 'bug', :name => 'name-2')
-                   ])
-      @menu.should_receive(:prompt=)
-      @menu.should_receive(:choice).with('CHORE   name-1')
-      @menu.should_receive(:choice).with('BUG     name-2')
-      Story.should_receive(:choose) { |&arg| arg.call @menu }.and_return(@story)
-
-      story = Story.select_story @project
-
-      expect(story).to be_a(Story)
-      expect(story.story).to be(@story)
+        expect(story).to be_a(Story)
+        expect(story.story).to be(@story)
+      end
     end
 
     describe '#create_branch!' do
-      it 'includes a tag to skip the ci build for the initial blank commit'
+      before do
+        @story.stub(story_type: 'feature', id: '123456', name: 'test', description: 'description')
+      end
 
-      it 'publishes the local branch and sets the upstream using the -u flag'
+      it 'includes a tag to skip the ci build for the initial blank commit' do
+        Git.stub(checkout: nil, pull_remote: nil, create_branch: nil, set_config: nil, push: nil)
+        Git.should_receive(:commit).with(hash_including(commit_message: 'Message [skip ci]')).and_return(true)
+
+        Story.new(@story).create_branch!('Message')
+      end
+
+      it 'pushes the local branch and sets the upstream using the -u flag' do
+        Git.stub(checkout: nil, pull_remote: nil, create_branch: nil, set_config: nil, commit: nil)
+        Git.should_receive(:push).with(instance_of(String), hash_including(set_upstream: true))
+
+        Story.new(@story).create_branch!('Message')
+      end
     end
   end
 end

@@ -4,13 +4,13 @@ module GithubPivotalFlow
   describe Git do
 
     before do
-      #$stdout = StringIO.new
-      #$stderr = StringIO.new
+      $stdout = StringIO.new
+      $stderr = StringIO.new
     end
 
     describe '.current_branch' do
       it 'returns the current branch name' do
-        Shell.should_receive(:exec).with('git branch', true).and_return("   master\n * dev_branch")
+        expect(Shell).to receive(:exec).with('git branch', true).and_return("   master\n * dev_branch")
 
         current_branch = Git.current_branch
 
@@ -85,7 +85,7 @@ module GithubPivotalFlow
       end
 
       it 'sets configuration when :local scope is specified' do
-        Shell.should_receive(:exec).with('git config --local test_key test_value', true)
+        expect(Shell).to receive(:exec).with('git config --local test_key test_value', true)
 
         Git.set_config 'test_key', 'test_value', :local
       end
@@ -109,10 +109,10 @@ module GithubPivotalFlow
         Dir.mktmpdir do |root|
           Git.should_receive(:repository_root).and_return(root)
           hook = "#{root}/.git/hooks/prepare-commit-msg"
-          File.should_receive(:exists?).with(hook).and_return(true)
+          expect(File).to receive(:exist?).with(hook).and_return(true)
 
           Git.add_hook 'prepare-commit-msg', __FILE__
-          File.should_receive(:exist?).and_call_original
+          expect(File).to receive(:exist?).and_call_original
           expect(File.exist?(hook)).to be_false
         end
       end
@@ -121,11 +121,11 @@ module GithubPivotalFlow
         Dir.mktmpdir do |root|
           Git.should_receive(:repository_root).and_return(root)
           hook = "#{root}/.git/hooks/prepare-commit-msg"
-          File.should_receive(:exist?).with(hook).and_return(false)
+          #File.should_receive(:exist?).with(hook).and_return(false)
+          expect(File).to receive(:exist?).with(hook).and_return(false)
 
           Git.add_hook 'prepare-commit-msg', __FILE__
-
-          File.should_receive(:exist?).and_call_original
+          expect(File).to receive(:exist?).with(hook).and_call_original
           expect(File.exist?(hook)).to be_true
         end
       end
@@ -152,18 +152,26 @@ module GithubPivotalFlow
     end
 
     describe '.push' do
-      it 'pushes changes back to the origin without refs' do
+      before do
         Git.should_receive(:get_config).with('remote', :branch).and_return('origin')
+      end
+
+      it 'pushes changes back to the origin without refs' do
         Shell.should_receive(:exec).with('git push --quiet origin ', true)
 
         Git.push
       end
 
       it 'pushes changes back to the origin with refs' do
-        Git.should_receive(:get_config).with('remote', :branch).and_return('origin')
         Shell.should_receive(:exec).with('git push --quiet origin foo bar', true)
 
         Git.push 'foo', 'bar'
+      end
+
+      it 'supports passing in the set_upstream option after a ref' do
+        Shell.should_receive(:exec).with('git push --quiet -u origin foo', true)
+
+        Git.push 'foo', set_upstream: true
       end
     end
 

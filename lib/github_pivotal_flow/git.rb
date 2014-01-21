@@ -54,7 +54,7 @@ module GithubPivotalFlow
       branch_name ||= self.current_branch
       exec "git checkout --quiet #{branch_name}" unless branch_name == self.current_branch
       command = "git push"
-      command << " -u" if options[:set_upstream]
+
       exec "#{command} #{self.get_remote} #{branch_name}"
     end
 
@@ -81,10 +81,16 @@ module GithubPivotalFlow
     end
 
     def self.push(*refs)
+      options = {}
+      if refs.last.is_a?(Hash)
+        options = refs.delete_at(-1)
+      end
       remote = self.get_remote
 
       print "Pushing to #{remote}... "
-      exec "git push --quiet #{remote} " + refs.join(' ')
+      command = "git push --quiet"
+      command << " -u" if options[:set_upstream]
+      exec "#{command} #{remote} " + refs.join(' ')
       puts 'OK'
     end
 
@@ -128,9 +134,6 @@ module GithubPivotalFlow
     def self.add_hook(name, source, overwrite = false)
       hooks_directory =  File.join repository_root, '.git', 'hooks'
       hook = File.join hooks_directory, name
-      puts "Overwrite: #{overwrite}"
-      puts "Hook: #{hook}"
-      puts "File.exists?: #{File.exist?(hook)}"
       if overwrite || !File.exist?(hook)
         print "Creating Git hook #{name}...  "
 

@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    github-pivotal-flow (0.0.5)
+    github-pivotal-flow (0.0.6)
       highline (~> 1.6)
       pivotal-tracker (~> 0.5)
 
@@ -62,6 +62,7 @@ DEPENDENCIES
   github-pivotal-flow!
   rake (~> 10.0)
   redcarpet (~> 2.2)
-  rspec (~> 2.13)
+  rspec (~> 2.14)
+  rspec-mocks (~> 2.14)
   simplecov (~> 0.7)
   yard (~> 0.8)
