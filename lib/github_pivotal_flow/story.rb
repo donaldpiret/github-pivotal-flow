@@ -77,8 +77,8 @@ module GithubPivotalFlow
       puts 'OK'
     end
 
-    def create_branch!(commit_message = nil)
-      commit_message ||= "Starting [#{story.story_type} ##{story.id}]: #{story.name}"
+    def create_branch!(commit_message = nil, options = {})
+      commit_message ||= "Starting [#{story.story_type} ##{story.id}][skip ci]: #{story.name}"
       set_branch_suffix
       print "Creating branch for story with branch name #{branch_name} from #{root_branch_name}... "
       Git.checkout(root_branch_name)
@@ -89,7 +89,7 @@ module GithubPivotalFlow
       Git.set_config('root-branch', root_branch_name, :branch)
       Git.set_config('root-remote', root_origin, :branch)
       Git.commit(commit_message: commit_message, allow_empty: true)
-      Git.publish(branch_name)
+      Git.publish(branch_name, set_upstream: true)
     end
 
     def merge_to_root!(commit_message = nil, options = {})

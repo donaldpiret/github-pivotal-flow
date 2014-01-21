@@ -50,10 +50,12 @@ module GithubPivotalFlow
       puts 'OK'
     end
 
-    def self.publish(branch_name)
+    def self.publish(branch_name, options = {})
       branch_name ||= self.current_branch
       exec "git checkout --quiet #{branch_name}" unless branch_name == self.current_branch
-      exec "git push #{self.get_remote} #{branch_name}"
+      command = "git push"
+      command << " -u" if options[:set_upstream]
+      exec "#{command} #{self.get_remote} #{branch_name}"
     end
 
     def self.commit(options = {})

@@ -121,5 +121,11 @@ module GithubPivotalFlow
       expect(story).to be_a(Story)
       expect(story.story).to be(@story)
     end
+
+    describe '#create_branch!' do
+      it 'includes a tag to skip the ci build for the initial blank commit'
+
+      it 'publishes the local branch and sets the upstream using the -u flag'
+    end
   end
 end
