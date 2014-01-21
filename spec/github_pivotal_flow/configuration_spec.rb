@@ -54,17 +54,49 @@ module GithubPivotalFlow
       @configuration.story = Story.new(PivotalTracker::Story.new(:id => 12345678))
     end
 
-    it 'return a story when requested' do
-      project = double('project')
-      stories = double('stories')
-      story = double('story')
-      Git.should_receive(:get_config).with('pivotal-story-id', :branch).and_return('12345678')
-      project.should_receive(:stories).and_return(stories)
-      stories.should_receive(:find).with(12345678).and_return(story)
+    describe 'story' do
+      it 'fetches the story based on the story id stored inside the git config' do
+        project = double('project')
+        stories = double('stories')
+        story = double('story')
+        Git.should_receive(:get_config).with('pivotal-story-id', :branch).and_return('12345678')
+        project.should_receive(:stories).and_return(stories)
+        stories.should_receive(:find).with(12345678).and_return(story)
 
-      result = @configuration.story project
+        result = @configuration.story project
 
-      expect(result).to be_a(Story)
+        expect(result.story).to eq(story)
+      end
+
+      it 'uses the branch name to deduce the story id if no git config is found' do
+        project = double('project')
+        stories = double('stories')
+        story = double('story')
+        Git.stub(:current_branch).and_return('feature/12345678-sample_feature')
+        Git.should_receive(:get_config).with('pivotal-story-id', :branch).and_return(' ')
+        project.should_receive(:stories).and_return(stories)
+        stories.should_receive(:find).with(12345678).and_return(story)
+
+        result = @configuration.story project
+
+        expect(result.story).to eq(story)
+      end
+
+      it 'prompts for the story id if the branch name does not match the known format' do
+        project = double('project')
+        stories = double('stories')
+        story = double('story')
+        Git.stub(:current_branch).and_return('unknownformat')
+        Git.should_receive(:get_config).with('pivotal-story-id', :branch).and_return(' ')
+        @configuration.should_receive(:ask).and_return('12345678')
+        Git.should_receive(:set_config).with('pivotal-story-id', '12345678', :branch)
+        project.should_receive(:stories).and_return(stories)
+        stories.should_receive(:find).with(12345678).and_return(story)
+
+        result = @configuration.story project
+
+        expect(result.story).to eq(story)
+      end
     end
 
     describe 'github_project' do

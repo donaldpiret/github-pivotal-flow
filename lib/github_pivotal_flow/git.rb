@@ -126,7 +126,9 @@ module GithubPivotalFlow
     def self.add_hook(name, source, overwrite = false)
       hooks_directory =  File.join repository_root, '.git', 'hooks'
       hook = File.join hooks_directory, name
-
+      puts "Overwrite: #{overwrite}"
+      puts "Hook: #{hook}"
+      puts "File.exists?: #{File.exist?(hook)}"
       if overwrite || !File.exist?(hook)
         print "Creating Git hook #{name}...  "
 

@@ -58,6 +58,15 @@ module GithubPivotalFlow
     # @return [PivotalTracker::Story] the story associated with the current development branch
     def story(project)
       story_id = Git.get_config(KEY_STORY_ID, :branch)
+      if story_id.blank? && (matchdata = /^[a-z0-9_\-]+\/(\d+)(-[a-z0-9_\-]+)?$/i.match(Git.current_branch))
+        story_id = matchdata[1]
+        Git.set_config(KEY_STORY_ID, story_id, :branch) unless story_id.blank?
+      end
+      if story_id.blank?
+        story_id = ask('What Pivotal story ID is this branch associated with?').strip
+        Git.set_config(KEY_STORY_ID, story_id, :branch) unless story_id.blank?
+      end
+      return nil if story_id.blank?
       Story.new(project.stories.find(story_id.to_i), :branch_name => Git.current_branch)
     end
 
