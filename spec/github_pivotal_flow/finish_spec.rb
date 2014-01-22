@@ -9,27 +9,34 @@ module GithubPivotalFlow
 
       @project = double('project')
       @story = double('story')
+      @configuration = double('configuration')
+      @configuration.stub(
+          development_branch: 'development',
+          master_branch: 'master',
+          feature_prefix: 'feature/',
+          hotfix_prefix: 'hotfix/',
+          release_prefix: 'release/',
+          api_token: 'token',
+          project_id: '123',
+          story: @story)
       Git.should_receive(:repository_root)
-      Configuration.any_instance.should_receive(:api_token)
-      Configuration.any_instance.should_receive(:project_id)
+      allow(Configuration).to receive(:new).and_return(@configuration)
       PivotalTracker::Project.should_receive(:find).and_return(@project)
       @finish = Finish.new
     end
 
     it 'merges the branch back to its root by default' do
-      Configuration.any_instance.should_receive(:story).and_return(@story)
-      @story.should_receive(:release?).and_return(false)
-      @story.should_receive(:can_merge?).and_return(true)
-      @story.should_receive(:merge_to_root!)
+      expect(@story).to receive(:release?).and_return(false)
+      expect(@story).to receive(:can_merge?).and_return(true)
+      expect(@story).to receive(:merge_to_root!).and_return(nil)
 
       @finish.run!
     end
 
     it 'merges as a release instead if it is a release branch' do
-      Configuration.any_instance.should_receive(:story).and_return(@story)
-      @story.should_receive(:release?).and_return(true)
-      @story.should_receive(:can_merge?).and_return(true)
-      @story.should_receive(:merge_release!)
+      expect(@story).to receive(:release?).and_return(true)
+      expect(@story).to receive(:can_merge?).and_return(true)
+      expect(@story).to receive(:merge_release!)
 
       @finish.run!
     end

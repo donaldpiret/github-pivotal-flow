@@ -9,25 +9,37 @@ module GithubPivotalFlow
       @project = double('project')
       @story = double('story')
       @ghclient = double('ghclient')
-      Git.should_receive(:repository_root)
-      GitHubAPI.should_receive(:new).and_return(@ghclient)
-      Configuration.any_instance.should_receive(:api_token)
-      Configuration.any_instance.should_receive(:project_id)
-      PivotalTracker::Project.should_receive(:find).and_return(@project)
+      @ghproject = double('ghproject')
+      @configuration = double('configuration')
+      @configuration.stub(
+          development_branch: 'development',
+          master_branch: 'master',
+          feature_prefix: 'feature/',
+          hotfix_prefix: 'hotfix/',
+          release_prefix: 'release/',
+          api_token: 'token',
+          project_id: '123',
+          github_project: @ghproject,
+          story: @story)
+      allow(Git).to receive(:repository_root)
+      allow(GitHubAPI).to receive(:new).and_return(@ghclient)
+      allow(Configuration).to receive(:new).and_return(@configuration)
+      allow(PivotalTracker::Project).to receive(:find).and_return(@project)
       @start = Start.new()
     end
 
     it 'should run' do
       @start.options[:args] = 'test_filter'
-      @story.stub(:unestimated? => false, :release? => false)
-      Story.should_receive(:select_story).with(@project, 'test_filter').and_return(@story)
-      Story.should_receive(:pretty_print)
-      @story.should_receive(:create_branch!)
-      Configuration.any_instance.should_receive(:story=)
-      Git.should_receive(:add_hook)
-      @story.should_receive(:params_for_pull_request).and_return({})
-      @ghclient.should_receive(:create_pullrequest)
-      @story.should_receive(:mark_started!)
+      @story.stub(:unestimated? => false, :release? => false, params_for_pull_request: {})
+
+      expect(Story).to receive(:select_story).with(@project, 'test_filter').and_return(@story)
+      expect(Story).to receive(:pretty_print)
+      expect(@story).to receive(:create_branch!)
+      expect(Git).to receive(:add_hook)
+      expect(@configuration).to receive(:story=).with(@story).and_return(true)
+      #@story.should_receive(:params_for_pull_request).and_return({})
+      expect(@ghclient).to receive(:create_pullrequest)
+      expect(@story).to receive(:mark_started!)
 
       @start.run!
     end
