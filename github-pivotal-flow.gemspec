@@ -27,7 +27,7 @@ Gem::Specification.new do |s|
   s.executables      = Dir['bin/*'].map { |f| File.basename f }
   s.test_files       = Dir['spec/**/*_spec.rb']
 
-  s.required_ruby_version = '>= 1.8.7'
+  s.required_ruby_version = '>= 1.9.3'
 
   s.add_dependency 'highline', '~> 1.6'
   s.add_dependency 'pivotal-tracker', '~> 0.5'

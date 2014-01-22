@@ -9,7 +9,7 @@ This is the tool we use internally to speed up our development process.
 [git-flow]: https://github.com/nvie/gitflow
 
 ## Installation
-`github-pivotal-flow` requires at least **Ruby 1.8.7**, **Git 1.8.2.1** in order to run.  It is tested against Rubies _1.8.7_, _1.9.3_, and _2.0.0_.  In order to install it, do the following:
+`github-pivotal-flow` requires at least **Ruby 1.9.3**, **Git 1.8.2.1** in order to run.  It is tested against Rubies _1.9.3_, _2.0.0_ and _2.1.0_.  In order to install it, do the following:
 
 ```plain
 $ gem install github-pivotal-flow
