@@ -19,9 +19,9 @@ module GithubPivotalFlow
           api_token: 'token',
           project_id: '123',
           story: @story)
-      Git.should_receive(:repository_root)
+      allow(Git).to receive(:repository_root)
       allow(Configuration).to receive(:new).and_return(@configuration)
-      PivotalTracker::Project.should_receive(:find).and_return(@project)
+      allow(PivotalTracker::Project).to receive(:find).and_return(@project)
       @finish = Finish.new
     end
 
