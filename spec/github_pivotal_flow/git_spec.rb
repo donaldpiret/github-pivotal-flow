@@ -181,6 +181,12 @@ module GithubPivotalFlow
 
         Git.commit commit_message: 'test_message', allow_empty: true
       end
+
+      it 'correctly escapes quotes for the commit message' do
+        expect(Shell).to receive(:exec).with(%Q(git commit --quiet --allow-empty -m "It's a \"hard\" not life"), true)
+
+        Git.commit commit_message: "It's a \"hard\" not life", allow_empty: true
+      end
     end
 
     describe '.tag' do

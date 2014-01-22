@@ -150,6 +150,10 @@ module GithubPivotalFlow
     end
 
     private
+    def self.escape_commit_message(message)
+      message.gsub('"', '\"').sub(/!\z/, '! ')
+    end
+
     def self.exec(command, abort_on_failure = true)
       return Shell.exec(command, abort_on_failure)
     end
