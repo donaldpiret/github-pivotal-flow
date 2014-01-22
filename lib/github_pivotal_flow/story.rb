@@ -79,7 +79,7 @@ module GithubPivotalFlow
 
     def create_branch!(commit_message = nil, options = {})
       commit_message ||= "Starting [#{story.story_type} ##{story.id}]: #{story.name}"
-      commit_message << " [skip ci]" unless options[:run_ci]
+      commit_message << " [ci skip]" unless options[:run_ci]
       print "Creating branch for story with branch name #{branch_name} from #{root_branch_name}... "
       Git.checkout(root_branch_name)
       root_origin = Git.get_remote

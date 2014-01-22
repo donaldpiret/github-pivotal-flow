@@ -133,7 +133,7 @@ module GithubPivotalFlow
 
       it 'includes a tag to skip the ci build for the initial blank commit' do
         Git.stub(checkout: nil, pull_remote: nil, create_branch: nil, set_config: nil, push: nil)
-        Git.should_receive(:commit).with(hash_including(commit_message: 'Message [skip ci]')).and_return(true)
+        Git.should_receive(:commit).with(hash_including(commit_message: 'Message [ci skip]')).and_return(true)
 
         Story.new(@story).create_branch!('Message')
       end
