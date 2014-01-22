@@ -51,7 +51,7 @@ module GithubPivotalFlow
       @story = story
       @branch_name = options.delete(:branch_name)
       @branch_suffix = @branch_name.split('-').last if @branch_name
-      @branch_suffix ||= ''
+      @branch_suffix ||= nil
     end
 
     def release?

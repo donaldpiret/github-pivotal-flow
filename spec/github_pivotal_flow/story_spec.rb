@@ -18,9 +18,7 @@ module GithubPivotalFlow
         story = double('story')
         story.should_receive(:name)
         story.should_receive(:description).and_return("description-1\ndescription-2")
-        PivotalTracker::Note.should_receive(:all).and_return([
-                                                                 PivotalTracker::Note.new(:noted_at => Date.new, :text => 'note-1')
-                                                             ])
+        PivotalTracker::Note.should_receive(:all).and_return([PivotalTracker::Note.new(:noted_at => Date.new, :text => 'note-1')])
 
         Story.pretty_print story
 
@@ -129,20 +127,31 @@ module GithubPivotalFlow
     describe '#create_branch!' do
       before do
         @story.stub(story_type: 'feature', id: '123456', name: 'test', description: 'description')
+        @pstory = GithubPivotalFlow::Story.new(@story)
+        allow(@pstory).to receive(:ask).and_return('test')
+      end
+
+      it 'prompts the user for a branch extension name' do
+        Git.stub(checkout: nil, pull_remote: nil, create_branch: nil, set_config: nil, push: nil, commit: nil)
+        expect(@pstory).to receive(:ask).with("Enter branch name (123456-<branch-name>): ").and_return('super-branch')
+
+        @pstory.create_branch!('Message')
       end
 
       it 'includes a tag to skip the ci build for the initial blank commit' do
+        @story.stub(branch_name: 'feature/123456-my_branch')
         Git.stub(checkout: nil, pull_remote: nil, create_branch: nil, set_config: nil, push: nil)
         Git.should_receive(:commit).with(hash_including(commit_message: 'Message [ci skip]')).and_return(true)
 
-        Story.new(@story).create_branch!('Message')
+        @pstory.create_branch!('Message')
       end
 
       it 'pushes the local branch and sets the upstream using the -u flag' do
+        @story.stub(branch_name: 'feature/123456-my_branch')
         Git.stub(checkout: nil, pull_remote: nil, create_branch: nil, set_config: nil, commit: nil)
         Git.should_receive(:push).with(instance_of(String), hash_including(set_upstream: true))
 
-        Story.new(@story).create_branch!('Message')
+        @pstory.create_branch!('Message')
       end
     end
   end
