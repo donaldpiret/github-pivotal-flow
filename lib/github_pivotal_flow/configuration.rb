@@ -11,6 +11,7 @@ module GithubPivotalFlow
 
     def validate
       repository_root
+      user_name
       ensure_github_api_token
       ensure_pivotal_api_token
       ensure_gitflow_config
@@ -19,6 +20,17 @@ module GithubPivotalFlow
 
     def repository_root
       @repository_root ||= Git.repository_root
+    end
+
+    def user_name
+      user_name = Git.get_config(KEY_USER_NAME, :inherited).strip
+      if user_name.blank?
+        user_name = ask('Github user name (Should be the same as in your Pivotal profile): ').strip
+        Git.set_config(KEY_USER_NAME, user_name, :local) unless user_name.blank?
+        puts
+      end
+
+      user_name
     end
 
     # Returns the user's Pivotal Tracker API token.  If this token has not been

@@ -21,6 +21,7 @@ require 'pivotal-tracker'
 require File.join('core_ext', 'object', 'blank')
 
 module GithubPivotalFlow
+  KEY_USER_NAME = 'user.name'.freeze
   KEY_API_TOKEN = 'pivotal.api-token'.freeze
   KEY_PROJECT_ID = 'pivotal.project-id'.freeze
   KEY_STORY_ID = 'pivotal-story-id'.freeze
