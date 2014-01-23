@@ -1,3 +1,5 @@
+# -*- encoding: utf-8 -*-
+$:.push File.expand_path('../lib', __FILE__)
 require 'github_pivotal_flow/version'
 
 Gem::Specification.new do |s|

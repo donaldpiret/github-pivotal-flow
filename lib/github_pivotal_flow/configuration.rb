@@ -15,6 +15,7 @@ module GithubPivotalFlow
       ensure_github_api_token
       ensure_pivotal_api_token
       ensure_gitflow_config
+      project.config = self
       return true
     end
 
@@ -95,7 +96,7 @@ module GithubPivotalFlow
     end
 
     def project
-      @project ||= Project.new(configuration: self)
+      @project ||= Project.new(config: self)
     end
 
     # Returns the story associated with the branch
@@ -113,7 +114,7 @@ module GithubPivotalFlow
         Git.set_config(KEY_STORY_ID, story_id, :branch) unless story_id.blank?
       end
       return nil if story_id.blank?
-      return (@story = Story.new(project, project.pivotal_project.stories.find(story_id.to_i), branch_name: Git.current_branch))
+      return (@story = Story.new(project, project.stories.find(story_id.to_i), branch_name: Git.current_branch))
     end
 
     # Stores the story associated with the current development branch

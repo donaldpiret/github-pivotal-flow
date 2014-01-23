@@ -11,10 +11,9 @@ module GithubPivotalFlow
       @stories = double('stories')
       @story = double('story')
       @pivotal_story = double('pivotal_story')
-      @pivotal_project = double('pivotal_project')
       @menu = double('menu')
-      allow(@project).to receive(:pivotal_project).and_return(@pivotal_project)
-      allow(@pivotal_project).to receive(:stories).and_return(@stories)
+      allow(@project).to receive(:stories).and_return(@stories)
+      allow(@story).to receive(:pivotal_story).and_return(@pivotal_story)
     end
 
     describe '.pretty_print' do

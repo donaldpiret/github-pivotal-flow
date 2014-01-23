@@ -4,7 +4,7 @@ module GithubPivotalFlow
     def run!
       filter = [@options[:args]].flatten.first
       #TODO: Validate the format of the filter argument
-      story = Story.select_story @project.pivotal_project, filter
+      story = Story.select_story @project, filter
       Story.pretty_print story
       story.request_estimation! if story.unestimated?
       story.create_branch!

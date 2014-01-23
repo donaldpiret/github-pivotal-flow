@@ -7,11 +7,8 @@ module GithubPivotalFlow
       $stderr = StringIO.new
       @story = double('story')
       @project = double('project')
-      @pivotal_project = double('pivotal_project')
-      @pivotal_story = double('pivotal_story')
       @project.stub(
-          pivotal_project: @pivotal_project,
-          stories: [@pivotal_story]
+          stories: [@story]
       )
       @ghclient = double('ghclient')
       @ghproject = double('ghproject')
@@ -38,7 +35,7 @@ module GithubPivotalFlow
       @start.options[:args] = 'test_filter'
       @story.stub(:unestimated? => false, :release? => false, params_for_pull_request: {})
 
-      expect(Story).to receive(:select_story).with(@pivotal_project, 'test_filter').and_return(@story)
+      expect(Story).to receive(:select_story).with(@project, 'test_filter').and_return(@story)
       expect(Story).to receive(:pretty_print)
       expect(@story).to receive(:create_branch!)
       expect(Git).to receive(:add_hook)

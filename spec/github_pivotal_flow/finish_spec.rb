@@ -24,8 +24,9 @@ module GithubPivotalFlow
           validate: true,
       )
       allow(Configuration).to receive(:new).and_return(@configuration)
-      allow(PivotalTracker::Project).to receive(:find).and_return(@project)
+      allow(Project).to receive(:find).and_return(@project)
       @finish = Finish.new
+      expect(@configuration).to receive(:story).and_return(@story)
     end
 
     it 'merges the branch back to its root by default' do

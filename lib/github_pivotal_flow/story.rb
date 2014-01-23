@@ -38,9 +38,9 @@ module GithubPivotalFlow
     # @return [PivotalTracker::Story] The Pivotal Tracker story selected by the user
     def self.select_story(project, filter = nil, limit = 5)
       if filter =~ /[[:digit:]]/
-        story = project.pivotal_project.stories.find filter.to_i
+        story = project.stories.find filter.to_i
       else
-        story = find_story project.pivotal_project, filter, limit
+        story = find_story project, filter, limit
       end
       self.new(project, story)
     end
@@ -65,22 +65,22 @@ module GithubPivotalFlow
     end
 
     def request_estimation!
-      self.pivotal_story.update(
-        :estimate => ask('Story is not yet estimated. Please estimate difficulty: ')
+      self.update(
+        estimate: ask('Story is not yet estimated. Please estimate difficulty: ')
       )
     end
 
     def mark_started!
       print 'Starting story on Pivotal Tracker... '
-      self.pivotal_story.update(
-          :current_state => 'started',
-          :owned_by => Git.get_config('user.name', :inherited)
+      self.update(
+          current_state: 'started',
+          owned_by: Git.get_config(KEY_USER_NAME, :inherited).strip
       )
       puts 'OK'
     end
 
     def create_branch!(commit_message = nil, options = {})
-      commit_message ||= "Starting [#{pivotal_story.story_type} ##{pivotal_story.id}]: #{pivotal_story.name}"
+      commit_message ||= "Starting [#{story_type} ##{id}]: #{name}"
       commit_message << " [ci skip]" unless options[:run_ci]
       print "Creating branch for story with branch name #{branch_name} from #{root_branch_name}... "
       Git.checkout(root_branch_name)
@@ -96,32 +96,44 @@ module GithubPivotalFlow
 
     def merge_to_root!(commit_message = nil, options = {})
       commit_message ||= "Merge #{branch_name} to #{root_branch_name}"
-      commit_message << "\n\n[#{options[:no_complete] ? '' : 'Completes '}##{pivotal_story.id}] "
+      commit_message << "\n\n[#{options[:no_complete] ? '' : 'Completes '}##{id}] "
       print "Merging #{branch_name} to #{root_branch_name}... "
       Git.checkout(root_branch_name)
       Git.pull_remote(root_branch_name)
-      Git.merge(branch_name, commit_message: commit_message, no_ff: true)
-      self.delete_branch!
+      if trivial_merge?
+        Git.merge(branch_name, commit_message: commit_message, ff: true)
+      else
+        Git.merge(branch_name, commit_message: commit_message, no_ff: true)
+      end
       Git.push(root_branch_name)
+      self.delete_branch!
       self.cleanup!
     end
 
     def merge_release!(commit_message = nil, options = {})
-      commit_message ||= "Release #{story.name}"
-      commit_message << "\n\n[#{options[:no_complete] ? '' : 'Completes '}##{pivotal_story.id}] "
+      commit_message ||= "Release #{name}"
+      commit_message << "\n\n[#{options[:no_complete] ? '' : 'Completes '}##{id}] "
       print "Merging #{branch_name} to #{master_branch_name}... "
       Git.checkout(master_branch_name)
       Git.pull_remote(master_branch_name)
-      Git.merge(master_branch_name, commit_message: commit_message, no_ff: true)
-      Git.tag(story.name)
-      print "Merging #{branch_name} to #{root_branch_name}... "
-      Git checkout(root_branch_name)
-      Git.pull_remote(root_branch_name)
-      Git.merge(branch_name, commit_message: commit_message, no_ff: true)
+      if trivial_merge?(master_branch_name)
+        Git.merge(branch_name, commit_message: commit_message, ff: true)
+      else
+        Git.merge(branch_name, commit_message: commit_message, no_ff: true)
+      end
+      Git.tag(name)
+      print "Merging #{branch_name} to #{development_branch_name}... "
+      Git checkout(development_branch_name)
+      Git.pull_remote(development_branch_name)
+      if trivial_merge?(development_branch_name)
+        Git.merge(branch_name, commit_message: commit_message, ff: true)
+      else
+        Git.merge(branch_name, commit_message: commit_message, no_ff: true)
+      end
       Git.checkout(master_branch_name)
-      self.delete_branch!
-      Git.push(master_branch_name, root_branch_name)
+      Git.push(master_branch_name, development_branch_name)
       Git.push_tags
+      self.delete_branch!
       self.cleanup!
     end
 
@@ -140,11 +152,11 @@ module GithubPivotalFlow
     #end
 
     def branch_name
-      @branch_name ||= branch_name_from(branch_prefix, pivotal_story.id, branch_suffix)
+      @branch_name ||= branch_name_from(branch_prefix, id, branch_suffix)
     end
 
     def branch_suffix
-      @branch_suffix ||= ask("Enter branch name (#{branch_name_from(branch_prefix, pivotal_story.id, "<branch-name>")}): ")
+      @branch_suffix ||= ask("Enter branch name (#{branch_name_from(branch_prefix, id, "<branch-name>")}): ")
     end
 
     def branch_name_from(branch_prefix, story_id, branch_name)
@@ -178,16 +190,16 @@ module GithubPivotalFlow
     end
 
     def labels
-      return [] if story.labels.blank?
-      story.labels.split(',').collect(&:strip)
+      return [] if pivotal_story.labels.blank?
+      pivotal_story.labels.split(',').collect(&:strip)
     end
 
     def params_for_pull_request
       {
-        :base => root_branch_name,
-        :head => branch_name,
-        :title => name,
-        :body => description,
+        base: root_branch_name,
+        head: branch_name,
+        title: name,
+        body: description,
       }
     end
 
@@ -196,16 +208,17 @@ module GithubPivotalFlow
     end
 
     def can_merge?
-      print "Checking for trivial merge from #{branch_name} to #{root_branch_name}... "
-      Git.pull_remote(root_branch_name)
-      root_tip = Shell.exec "git rev-parse #{root_branch_name}"
-      common_ancestor = Shell.exec "git merge-base #{root_branch_name} #{branch_name}"
+      Git.clean_working_tree?
+    end
 
+    def trivial_merge?(to_branch = nil)
+      to_branch ||= root_branch_name
+      root_tip = Shell.exec "git rev-parse #{to_branch}"
+      common_ancestor = Shell.exec "git merge-base #{to_branch} #{branch_name}"
       if root_tip != common_ancestor
-        abort 'FAIL'
+        return false
       end
-
-      puts 'OK'
+      return true
     end
 
     private
@@ -233,7 +246,7 @@ module GithubPivotalFlow
       end
     end
 
-    def self.find_story(pivotal_project, type, limit)
+    def self.find_story(project, type, limit)
       criteria = {
           :current_state => CANDIDATE_STATES,
           :limit => limit
@@ -242,23 +255,23 @@ module GithubPivotalFlow
         criteria[:story_type] = type
       end
 
-      candidates = pivotal_project.stories.all criteria
+      candidates = project.stories.all criteria
       if candidates.length == 1
-        pivotal_story = candidates[0]
+        story = candidates[0]
       else
-        pivotal_story = choose do |menu|
+        story = choose do |menu|
           menu.prompt = 'Choose story to start: '
 
-          candidates.each do |pivotal_story|
-            name = type ? pivotal_story.name : '%-7s %s' % [pivotal_story.story_type.upcase, pivotal_story.name]
-            menu.choice(name) { pivotal_story }
+          candidates.each do |story|
+            name = type ? story.name : '%-7s %s' % [story.story_type.upcase, story.name]
+            menu.choice(name) { story }
           end
         end
 
         puts
       end
 
-      pivotal_story
+      story
     end
 
     def branch_prefix
@@ -266,7 +279,7 @@ module GithubPivotalFlow
       when 'feature'
         prefix = Git.get_config(KEY_FEATURE_PREFIX, :inherited)
       when 'bug'
-        prefix = self.labels.include?('hotfix') ? Git.get_config(KEY_HOTFIX_PREFIX, :inherited) : Git.get_config(KEY_FEATURE_PREFIX, :inherited)
+        prefix = labels.include?('hotfix') ? Git.get_config(KEY_HOTFIX_PREFIX, :inherited) : Git.get_config(KEY_FEATURE_PREFIX, :inherited)
       when 'release'
         prefix = Git.get_config(KEY_RELEASE_PREFIX, :inherited)
       else

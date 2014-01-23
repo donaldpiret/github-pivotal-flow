@@ -45,6 +45,7 @@ module GithubPivotalFlow
     def self.merge(branch_name, options = {})
       command = "git merge --quiet"
       command << " --no-ff" if options[:no_ff]
+      command << " --ff" if options[:ff] && !options[:no_ff]
       command << " -m \"#{options[:commit_message]}\"" unless options[:commit_message].blank?
       exec "#{command} #{branch_name}"
       puts 'OK'
@@ -160,6 +161,14 @@ module GithubPivotalFlow
 
         puts 'OK'
       end
+    end
+
+    def self.clean_working_tree?
+      exec("git diff --no-ext-diff --ignore-submodules --quiet --exit-code", false)
+      fail("fatal: Working tree contains unstaged changes. Aborting.") if $?.exitstatus != 0
+      exec("git diff-index --cached --quiet --ignore-submodules HEAD --", false)
+      fail("fatal: Index contains uncommited changes. Aborting.") if $?.exitstatus != 0
+      return true
     end
 
     private

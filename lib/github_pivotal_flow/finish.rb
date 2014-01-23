@@ -4,7 +4,7 @@ module GithubPivotalFlow
 
     # Finishes a Pivotal Tracker story
     def run!
-      story = @configuration.story(@project)
+      story = @configuration.story
       story.can_merge?
       commit_message = options[:commit_message]
       if story.release?

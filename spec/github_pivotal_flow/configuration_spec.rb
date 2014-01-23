@@ -68,17 +68,15 @@ module GithubPivotalFlow
     describe '#story' do
       let(:project) { double('project') }
       let(:stories) { double('stories') }
-      let(:pivotal_project) { double('pivotal_project') }
       let(:pivotal_story) { double('pivotal_story') }
 
       before do
         allow(@configuration).to receive(:project).and_return(project)
-        allow(project).to receive(:pivotal_project).and_return(pivotal_project)
       end
 
       it 'fetches the story based on the story id stored inside the git config' do
         expect(Git).to receive(:get_config).with('pivotal-story-id', :branch).and_return('12345678')
-        expect(pivotal_project).to receive(:stories).and_return(stories)
+        expect(project).to receive(:stories).and_return(stories)
         expect(stories).to receive(:find).with(12345678).and_return(pivotal_story)
 
         result = @configuration.story
@@ -90,7 +88,7 @@ module GithubPivotalFlow
       it 'uses the branch name to deduce the story id if no git config is found' do
         Git.stub(:current_branch).and_return('feature/12345678-sample_feature')
         expect(Git).to receive(:get_config).with('pivotal-story-id', :branch).and_return(' ')
-        expect(pivotal_project).to receive(:stories).and_return(stories)
+        expect(project).to receive(:stories).and_return(stories)
         expect(stories).to receive(:find).with(12345678).and_return(pivotal_story)
 
         result = @configuration.story
@@ -103,7 +101,7 @@ module GithubPivotalFlow
         expect(Git).to receive(:get_config).with('pivotal-story-id', :branch).and_return(' ')
         expect(@configuration).to receive(:ask).and_return('12345678')
         expect(Git).to receive(:set_config).with('pivotal-story-id', '12345678', :branch)
-        expect(pivotal_project).to receive(:stories).and_return(stories)
+        expect(project).to receive(:stories).and_return(stories)
         expect(stories).to receive(:find).with(12345678).and_return(pivotal_story)
 
         result = @configuration.story
