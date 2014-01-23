@@ -4,27 +4,23 @@ module GithubPivotalFlow
     def run!
       filter = [@options[:args]].flatten.first
       #TODO: Validate the format of the filter argument
-      story = Story.select_story @project, filter
+      story = Story.select_story @project.pivotal_project, filter
       Story.pretty_print story
       story.request_estimation! if story.unestimated?
       story.create_branch!
       @configuration.story = story # Tag the branch with story attributes
       Git.add_hook 'prepare-commit-msg', File.join(File.dirname(__FILE__), 'prepare-commit-msg.sh')
       unless story.release?
-        @ghclient = GitHubAPI.new(@configuration, :app_url => 'http://github.com/roomorama/github-pivotal-flow')
-        create_pull_request_for_story!(story)
+        print "Creating pull-request on Github... "
+        pull_request_params = story.params_for_pull_request.merge(project: @configuration.project)
+        @configuration.github_client.create_pullrequest(pull_request_params)
+        puts 'OK'
       end
       story.mark_started!
       return 0
     end
 
     private
-
-    def create_pull_request_for_story!(story)
-      print "Creating pull-request on Github... "
-      @ghclient.create_pullrequest({:project => @configuration.github_project}.merge(story.params_for_pull_request))
-      puts 'OK'
-    end
 
     def parse_argv(*args)
       OptionParser.new do |opts|

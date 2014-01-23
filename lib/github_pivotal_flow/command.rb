@@ -15,21 +15,10 @@ module GithubPivotalFlow
       @options = {}
       args = parse_argv(*args)
       @options[:args] = args
-
-      @repository_root = Git.repository_root
       @configuration = Configuration.new(@options)
-
-      PivotalTracker::Client.token = @configuration.api_token
-      PivotalTracker::Client.use_ssl = true
-
-      @project = PivotalTracker::Project.find @configuration.project_id
-
-      # Make sure that all the git flow config options are set up
-      @configuration.development_branch
-      @configuration.master_branch
-      @configuration.feature_prefix
-      @configuration.hotfix_prefix
-      @configuration.release_prefix
+      # Validate the configuration to make sure everything is set up correctly
+      @configuration.validate
+      @project = @configuration.project
     end
 
     # The main entry point to the command's execution

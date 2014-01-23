@@ -20,6 +20,21 @@ require 'pivotal-tracker'
 
 require File.join('core_ext', 'object', 'blank')
 
+module GithubPivotalFlow
+  KEY_API_TOKEN = 'pivotal.api-token'.freeze
+  KEY_PROJECT_ID = 'pivotal.project-id'.freeze
+  KEY_STORY_ID = 'pivotal-story-id'.freeze
+  KEY_FEATURE_PREFIX = 'gitflow.prefix.feature'.freeze
+  KEY_HOTFIX_PREFIX = 'gitflow.prefix.hotfix'.freeze
+  KEY_RELEASE_PREFIX = 'gitflow.prefix.release'.freeze
+  KEY_DEVELOPMENT_BRANCH = 'gitflow.branch.develop'.freeze
+  KEY_MASTER_BRANCH = 'gitflow.branch.master'.freeze
+  KEY_GITHUB_USERNAME = 'github.username'.freeze
+  KEY_GITHUB_API_TOKEN = 'github.api-token'.freeze
+end
+
+require File.join('github_pivotal_flow', 'version')
+
 require File.join('github_pivotal_flow', 'shell')
 require File.join('github_pivotal_flow', 'git')
 require File.join('github_pivotal_flow', 'project')

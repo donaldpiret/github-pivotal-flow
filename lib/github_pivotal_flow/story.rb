@@ -1,7 +1,7 @@
 # Utilities for dealing with +PivotalTracker::Story+s
 module GithubPivotalFlow
   class Story
-    attr_accessor :story, :branch_name, :root_branch_name
+    attr_accessor :pivotal_story, :project, :branch_name, :root_branch_name
 
     # Print a human readable version of a story.  This pretty prints the title,
     # description, and notes for the story.
@@ -28,7 +28,7 @@ module GithubPivotalFlow
 
     # Selects a Pivotal Tracker story by doing the following steps:
     #
-    # @param [PivotalTracker::Project] project the project to select stories from
+    # @param [Project] project the project to select stories from
     # @param [String, nil] filter a filter for selecting the story to start.  This
     #   filter can be either:
     #   * a story id: selects the story represented by the id
@@ -38,24 +38,26 @@ module GithubPivotalFlow
     # @return [PivotalTracker::Story] The Pivotal Tracker story selected by the user
     def self.select_story(project, filter = nil, limit = 5)
       if filter =~ /[[:digit:]]/
-        story = project.stories.find filter.to_i
+        story = project.pivotal_project.stories.find filter.to_i
       else
-        story = find_story project, filter, limit
+        story = find_story project.pivotal_project, filter, limit
       end
-      self.new(story)
+      self.new(project, story)
     end
 
-    # @param [PivotalTracker::Story] story the story to wrap
-    def initialize(story, options = {})
-      raise "Invalid PivotalTracker::Story" if story.nil?
-      @story = story
+    # @param [Project] project the Project for this repo
+    # @param [PivotalTracker::Story] pivotal_story the Pivotal tracker story to wrap
+    def initialize(project, pivotal_story, options = {})
+      raise "Invalid PivotalTracker::Story" if pivotal_story.nil?
+      @project = project
+      @pivotal_story = pivotal_story
       @branch_name = options.delete(:branch_name)
       @branch_suffix = @branch_name.split('-').last if @branch_name
       @branch_suffix ||= nil
     end
 
     def release?
-      story.story_type == 'release'
+      story_type == 'release'
     end
 
     def unestimated?
@@ -63,14 +65,14 @@ module GithubPivotalFlow
     end
 
     def request_estimation!
-      self.story.update(
+      self.pivotal_story.update(
         :estimate => ask('Story is not yet estimated. Please estimate difficulty: ')
       )
     end
 
     def mark_started!
       print 'Starting story on Pivotal Tracker... '
-      self.story.update(
+      self.pivotal_story.update(
           :current_state => 'started',
           :owned_by => Git.get_config('user.name', :inherited)
       )
@@ -78,7 +80,7 @@ module GithubPivotalFlow
     end
 
     def create_branch!(commit_message = nil, options = {})
-      commit_message ||= "Starting [#{story.story_type} ##{story.id}]: #{story.name}"
+      commit_message ||= "Starting [#{pivotal_story.story_type} ##{pivotal_story.id}]: #{pivotal_story.name}"
       commit_message << " [ci skip]" unless options[:run_ci]
       print "Creating branch for story with branch name #{branch_name} from #{root_branch_name}... "
       Git.checkout(root_branch_name)
@@ -94,7 +96,7 @@ module GithubPivotalFlow
 
     def merge_to_root!(commit_message = nil, options = {})
       commit_message ||= "Merge #{branch_name} to #{root_branch_name}"
-      commit_message << "\n\n[#{options[:no_complete] ? '' : 'Completes '}##{story.id}] "
+      commit_message << "\n\n[#{options[:no_complete] ? '' : 'Completes '}##{pivotal_story.id}] "
       print "Merging #{branch_name} to #{root_branch_name}... "
       Git.checkout(root_branch_name)
       Git.pull_remote(root_branch_name)
@@ -106,7 +108,7 @@ module GithubPivotalFlow
 
     def merge_release!(commit_message = nil, options = {})
       commit_message ||= "Release #{story.name}"
-      commit_message << "\n\n[#{options[:no_complete] ? '' : 'Completes '}##{story.id}] "
+      commit_message << "\n\n[#{options[:no_complete] ? '' : 'Completes '}##{pivotal_story.id}] "
       print "Merging #{branch_name} to #{master_branch_name}... "
       Git.checkout(master_branch_name)
       Git.pull_remote(master_branch_name)
@@ -138,17 +140,17 @@ module GithubPivotalFlow
     #end
 
     def branch_name
-      @branch_name ||= branch_name_from(branch_prefix, story.id, branch_suffix)
+      @branch_name ||= branch_name_from(branch_prefix, pivotal_story.id, branch_suffix)
     end
 
     def branch_suffix
-      @branch_suffix ||= ask("Enter branch name (#{branch_name_from(branch_prefix, story.id, "<branch-name>")}): ")
+      @branch_suffix ||= ask("Enter branch name (#{branch_name_from(branch_prefix, pivotal_story.id, "<branch-name>")}): ")
     end
 
     def branch_name_from(branch_prefix, story_id, branch_name)
       if story_type == 'release'
         # For release branches the format is release/5.0
-        "#{Git.get_config('gitflow.prefix.release', :inherited)}#{branch_name}"
+        "#{Git.get_config(KEY_RELEASE_PREFIX, :inherited)}#{branch_name}"
       else
         n = "#{branch_prefix}#{story_id}"
         n << "-#{branch_name}" unless branch_name.blank?
@@ -168,11 +170,11 @@ module GithubPivotalFlow
     end
 
     def master_branch_name
-      Git.get_config('gitflow.branch.master', :inherited)
+      Git.get_config(KEY_MASTER_BRANCH, :inherited)
     end
 
     def development_branch_name
-      Git.get_config('gitflow.branch.develop', :inherited)
+      Git.get_config(KEY_DEVELOPMENT_BRANCH, :inherited)
     end
 
     def labels
@@ -190,7 +192,7 @@ module GithubPivotalFlow
     end
 
     def method_missing(m, *args, &block)
-      return @story.send(m, *args, &block)
+      return @pivotal_story.send(m, *args, &block)
     end
 
     def can_merge?
@@ -231,7 +233,7 @@ module GithubPivotalFlow
       end
     end
 
-    def self.find_story(project, type, limit)
+    def self.find_story(pivotal_project, type, limit)
       criteria = {
           :current_state => CANDIDATE_STATES,
           :limit => limit
@@ -240,36 +242,38 @@ module GithubPivotalFlow
         criteria[:story_type] = type
       end
 
-      candidates = project.stories.all criteria
+      candidates = pivotal_project.stories.all criteria
       if candidates.length == 1
-        story = candidates[0]
+        pivotal_story = candidates[0]
       else
-        story = choose do |menu|
+        pivotal_story = choose do |menu|
           menu.prompt = 'Choose story to start: '
 
-          candidates.each do |story|
-            name = type ? story.name : '%-7s %s' % [story.story_type.upcase, story.name]
-            menu.choice(name) { story }
+          candidates.each do |pivotal_story|
+            name = type ? pivotal_story.name : '%-7s %s' % [pivotal_story.story_type.upcase, pivotal_story.name]
+            menu.choice(name) { pivotal_story }
           end
         end
 
         puts
       end
 
-      story
+      pivotal_story
     end
 
     def branch_prefix
-      case self.story_type
+      case story_type
       when 'feature'
-        Git.get_config('gitflow.prefix.feature', :inherited)
+        prefix = Git.get_config(KEY_FEATURE_PREFIX, :inherited)
       when 'bug'
-        self.labels.include?('hotfix') ? Git.get_config('gitflow.prefix.hotfix', :inherited) : Git.get_config('gitflow.prefix.feature', :inherited)
+        prefix = self.labels.include?('hotfix') ? Git.get_config(KEY_HOTFIX_PREFIX, :inherited) : Git.get_config(KEY_FEATURE_PREFIX, :inherited)
       when 'release'
-        Git.get_config('gitflow.prefix.release', :inherited)
+        prefix = Git.get_config(KEY_RELEASE_PREFIX, :inherited)
       else
-        'misc/'
+        prefix = 'misc/'
       end
+      prefix = "#{prefix.strip}/" unless prefix.strip[-1,1] == '/'
+      return prefix.strip
     end
   end
 end

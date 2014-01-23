@@ -118,6 +118,19 @@ module GithubPivotalFlow
       else
         raise "Unable to set Git configuration for scope '#{scope}'"
       end
+      return value
+    end
+
+    def self.delete_config(key, scope = :local)
+      if :branch == scope
+        exec "git config --local --unset branch.#{self.current_branch}.#{key}"
+      elsif :global == scope
+        exec "git config --global --unset #{key}"
+      elsif :local == scope
+        exec "git config --local --unset #{key}"
+      else
+        raise "Unable to delete Git configuration for scope '#{scope}'"
+      end
     end
 
     def self.repository_root

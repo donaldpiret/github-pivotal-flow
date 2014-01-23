@@ -9,6 +9,18 @@ module GithubPivotalFlow
       @github_password_cache = {}
     end
 
+    def validate
+      repository_root
+      ensure_github_api_token
+      ensure_pivotal_api_token
+      ensure_gitflow_config
+      return true
+    end
+
+    def repository_root
+      @repository_root ||= Git.repository_root
+    end
+
     # Returns the user's Pivotal Tracker API token.  If this token has not been
     # configured, prompts the user for the value.  The value is checked for in
     # the _inherited_ Git configuration, but is stored in the _global_ Git
@@ -18,13 +30,31 @@ module GithubPivotalFlow
     def api_token
       api_token = @options[:api_token] || Git.get_config(KEY_API_TOKEN, :inherited)
 
-      if api_token.empty?
+      if api_token.blank?
         api_token = ask('Pivotal API Token (found at https://www.pivotaltracker.com/profile): ').strip
-        Git.set_config KEY_API_TOKEN, api_token, :global
+        Git.set_config(KEY_API_TOKEN, api_token, :local) unless api_token.blank?
         puts
       end
 
       api_token
+    end
+
+    def ensure_pivotal_api_token
+      PivotalTracker::Client.use_ssl = true
+      while (PivotalTracker::Client.token = self.api_token).blank? || PivotalTracker::Project.all.empty?
+        puts "No projects found."
+        clear_pivotal_api_token!
+      end
+      return true
+    rescue RestClient::Unauthorized => e
+      puts "Invalid Pivotal token"
+      clear_pivotal_api_token!
+      retry
+    end
+
+    def clear_pivotal_api_token!
+      PivotalTracker::Client.token = nil
+      Git.delete_config(KEY_API_TOKEN, :local)
     end
 
     # Returns the Pivotal Tracker project id for this repository.  If this id
@@ -45,18 +75,22 @@ module GithubPivotalFlow
           end
         end
 
-        Git.set_config KEY_PROJECT_ID, project_id, :local
+        Git.set_config(KEY_PROJECT_ID, project_id, :local)
         puts
       end
 
       project_id
     end
 
-    # Returns the story associated with the current development branch
+    def project
+      @project ||= Project.new(configuration: self)
+    end
+
+    # Returns the story associated with the branch
     #
-    # @param [PivotalTracker::Project] project the project the story belongs to
-    # @return [PivotalTracker::Story] the story associated with the current development branch
-    def story(project)
+    # @return [Story] the story associated with the current development branch
+    def story
+      return @story if @story
       story_id = Git.get_config(KEY_STORY_ID, :branch)
       if story_id.blank? && (matchdata = /^[a-z0-9_\-]+\/(\d+)(-[a-z0-9_\-]+)?$/i.match(Git.current_branch))
         story_id = matchdata[1]
@@ -67,7 +101,7 @@ module GithubPivotalFlow
         Git.set_config(KEY_STORY_ID, story_id, :branch) unless story_id.blank?
       end
       return nil if story_id.blank?
-      Story.new(project.stories.find(story_id.to_i), :branch_name => Git.current_branch)
+      return (@story = Story.new(project, project.pivotal_project.stories.find(story_id.to_i), branch_name: Git.current_branch))
     end
 
     # Stores the story associated with the current development branch
@@ -86,7 +120,6 @@ module GithubPivotalFlow
         feature_prefix = 'feature/' if feature_prefix.blank?
         feature_prefix = "#{feature_prefix}/" unless feature_prefix[-1,1] == '/'
         Git.set_config KEY_FEATURE_PREFIX, feature_prefix, :local
-        puts
       end
 
       feature_prefix
@@ -100,7 +133,6 @@ module GithubPivotalFlow
         hotfix_prefix = 'hotfix/' if hotfix_prefix.blank?
         hotfix_prefix = "#{hotfix_prefix}/" unless hotfix_prefix[-1,1] == '/'
         Git.set_config KEY_HOTFIX_PREFIX, hotfix_prefix, :local
-        puts
       end
 
       hotfix_prefix
@@ -113,8 +145,7 @@ module GithubPivotalFlow
         release_prefix = ask('Please enter your git-flow release branch prefix: [release/]').strip
         release_prefix = 'release' if release_prefix.blank?
         release_prefix = "#{release_prefix}/" unless release_prefix[-1,1] == '/'
-        Git.set_config KEY_RELEASE_PREFIX, release_prefix, :local
-        puts
+        Git.set_config(KEY_RELEASE_PREFIX, release_prefix, :local)
       end
 
       release_prefix
@@ -125,9 +156,8 @@ module GithubPivotalFlow
 
       if development_branch.empty?
         development_branch = ask('Please enter your git-flow development branch name: [development]').strip
-        development_branch = 'development' if development_branch.nil? || development_branch.empty?
+        development_branch = 'development' if development_branch.blank?
         Git.set_config KEY_DEVELOPMENT_BRANCH, development_branch, :local
-        puts
       end
       Git.ensure_branch_exists(development_branch)
 
@@ -139,20 +169,27 @@ module GithubPivotalFlow
 
       if master_branch.blank?
         master_branch = ask('Please enter your git-flow production branch name: [master]').strip
-        master_branch = 'master' if master_branch.nil? || master_branch.empty?
+        master_branch = 'master' if master_branch.blank?
         Git.set_config KEY_MASTER_BRANCH, master_branch, :local
-        puts
       end
       Git.ensure_branch_exists(master_branch)
 
       master_branch
     end
 
-    def github_project
-      @github_project ||= Project.from_url(Git.get_config("remote.#{Git.get_remote}.url"))
+    def ensure_gitflow_config
+      development_branch && master_branch && feature_prefix && hotfix_prefix && release_prefix
     end
 
-    def github_username(host)
+    def github_client
+      @ghclient ||= GitHubAPI.new(self, :app_url => 'http://github.com/roomorama/github-pivotal-flow')
+    end
+
+    def github_host
+      project.host
+    end
+
+    def github_username(host = github_host)
       return ENV['GITHUB_USER'] unless ENV['GITHUB_USER'].to_s.blank?
       github_username = Git.get_config KEY_GITHUB_USERNAME, :inherited
       if github_username.blank?
@@ -162,27 +199,54 @@ module GithubPivotalFlow
       github_username
     end
 
-    def github_username=(github_username)
-      Git.set_config KEY_GITHUB_USERNAME, github_username, :local unless github_username.blank?
+    def github_username=(username)
+      Git.set_config KEY_GITHUB_USERNAME, username, :local unless username.blank?
     end
 
-    def github_password(host, user)
-      return ENV['GITHUB_PASSWORD'] unless ENV['GITHUB_PASSWORD'].to_s.empty?
-      @github_password_cache["#{user}"] ||= ask_password(user)
+    def github_password(host = github_host, user = nil)
+      return ENV['GITHUB_PASSWORD'] unless ENV['GITHUB_PASSWORD'].to_s.blank?
+      user ||= github_username(host)
+      @github_password_cache["#{user}"] ||= ask_github_password(user)
     end
 
-    def github_api_token(host, user)
+    def clear_github_auth_data!
+      @github_password_cache = {}
+      Git.delete_config(KEY_GITHUB_USERNAME, :local)
+    end
+
+    def ensure_github_api_token
+      begin
+        repo_found = github_client.repo_exists?(project)
+      end while github_api_token.blank?
+      raise("Could not find github project") unless repo_found
+    rescue Net::HTTPServerException => e
+      case e.response.code
+      when '401'
+        say "Invalid username/password combination. Please try again:"
+      else
+        say "Unknown error (#{e.response.code}). Please try again: "
+      end
+      clear_github_auth_data!
+      retry
+    end
+
+    def github_api_token(host = nil, user = nil)
+      host ||= github_host
+      user ||= github_username
       github_token = Git.get_config KEY_GITHUB_API_TOKEN, :inherited
       if github_token.blank?
-        github_token = yield
-        Git.set_config KEY_GITHUB_API_TOKEN, github_token, :local
+        if block_given?
+          github_token = yield
+        end
+        Git.set_config(KEY_GITHUB_API_TOKEN, github_token, :global) unless github_token.blank?
       end
       github_token
     end
 
     # special prompt that has hidden input
-    def ask_password(user)
-      print "Github password for #{user} (never stored): "
+    def ask_github_password(username = nil)
+      username ||= github_username
+      print "Github password for #{username} (never stored): "
       if $stdin.tty?
         password = askpass
         puts ''
@@ -247,18 +311,5 @@ module GithubPivotalFlow
         URI.parse proxy
       end
     end
-
-    private
-
-    KEY_API_TOKEN = 'pivotal.api-token'.freeze
-    KEY_PROJECT_ID = 'pivotal.project-id'.freeze
-    KEY_STORY_ID = 'pivotal-story-id'.freeze
-    KEY_FEATURE_PREFIX = 'gitflow.prefix.feature'.freeze
-    KEY_HOTFIX_PREFIX = 'gitflow.prefix.hotfix'.freeze
-    KEY_RELEASE_PREFIX = 'gitflow.prefix.release'.freeze
-    KEY_DEVELOPMENT_BRANCH = 'gitflow.branch.develop'.freeze
-    KEY_MASTER_BRANCH = 'gitflow.branch.master'.freeze
-    KEY_GITHUB_USERNAME = 'github.username'.freeze
-    KEY_GITHUB_API_TOKEN = 'github.api-token'.freeze
   end
 end

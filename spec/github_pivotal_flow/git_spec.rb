@@ -112,7 +112,7 @@ module GithubPivotalFlow
           expect(File).to receive(:exist?).with(hook).and_return(true)
 
           Git.add_hook 'prepare-commit-msg', __FILE__
-          expect(File).to receive(:exist?).and_call_original
+          allow(File).to receive(:exist?).and_call_original
           expect(File.exist?(hook)).to be_false
         end
       end

@@ -10,7 +10,11 @@ module GithubPivotalFlow
       @project = double('project')
       @stories = double('stories')
       @story = double('story')
+      @pivotal_story = double('pivotal_story')
+      @pivotal_project = double('pivotal_project')
       @menu = double('menu')
+      allow(@project).to receive(:pivotal_project).and_return(@pivotal_project)
+      allow(@pivotal_project).to receive(:stories).and_return(@stories)
     end
 
     describe '.pretty_print' do
@@ -59,32 +63,28 @@ module GithubPivotalFlow
 
     describe '.select_story' do
       it 'selects a story directly if the filter is a number' do
-        @project.should_receive(:stories).and_return(@stories)
-        @stories.should_receive(:find).with(12345678).and_return(@story)
-
+        expect(@stories).to receive(:find).with(12345678).and_return(@pivotal_story)
         story = Story.select_story @project, '12345678'
 
         expect(story).to be_a(Story)
-        expect(story.story).to be(@story)
+        expect(story.pivotal_story).to eq(@pivotal_story)
       end
 
       it 'selects a story if the result of the query is a single story' do
-        @project.should_receive(:stories).and_return(@stories)
-        @stories.should_receive(:all).with(
+        expect(@stories).to receive(:all).with(
             :current_state => %w(rejected unstarted unscheduled),
             :limit => 1,
             :story_type => 'release'
-        ).and_return([@story])
+        ).and_return([@pivotal_story])
 
         story = Story.select_story @project, 'release', 1
 
         expect(story).to be_a(Story)
-        expect(story.story).to be(@story)
+        expect(story.pivotal_story).to eq(@pivotal_story)
       end
 
       it 'prompts the user for a story if the result of the query is more than a single story' do
-        @project.should_receive(:stories).and_return(@stories)
-        @stories.should_receive(:all).with(
+        expect(@stories).to receive(:all).with(
             :current_state => %w(rejected unstarted unscheduled),
             :limit => 5,
             :story_type => 'feature'
@@ -92,66 +92,77 @@ module GithubPivotalFlow
                          PivotalTracker::Story.new(:name => 'name-1'),
                          PivotalTracker::Story.new(:name => 'name-2')
                      ])
-        @menu.should_receive(:prompt=)
-        @menu.should_receive(:choice).with('name-1')
-        @menu.should_receive(:choice).with('name-2')
-        Story.should_receive(:choose) { |&arg| arg.call @menu }.and_return(@story)
+        expect(@menu).to receive(:prompt=)
+        expect(@menu).to receive(:choice).with('name-1')
+        expect(@menu).to receive(:choice).with('name-2')
+        expect(Story).to receive(:choose) { |&arg| arg.call @menu }.and_return(@pivotal_story)
 
         story = Story.select_story @project, 'feature'
 
         expect(story).to be_a(Story)
-        expect(story.story).to be(@story)
+        expect(story.pivotal_story).to eq(@pivotal_story)
       end
 
       it 'prompts the user with the story type if no filter is specified' do
-        @project.should_receive(:stories).and_return(@stories)
-        @stories.should_receive(:all).with(
+        expect(@stories).to receive(:all).with(
             :current_state => %w(rejected unstarted unscheduled),
             :limit => 5
         ).and_return([
                          PivotalTracker::Story.new(:story_type => 'chore', :name => 'name-1'),
                          PivotalTracker::Story.new(:story_type => 'bug', :name => 'name-2')
                      ])
-        @menu.should_receive(:prompt=)
-        @menu.should_receive(:choice).with('CHORE   name-1')
-        @menu.should_receive(:choice).with('BUG     name-2')
-        Story.should_receive(:choose) { |&arg| arg.call @menu }.and_return(@story)
+        expect(@menu).to receive(:prompt=)
+        expect(@menu).to receive(:choice).with('CHORE   name-1')
+        expect(@menu).to receive(:choice).with('BUG     name-2')
+        expect(Story).to receive(:choose) { |&arg| arg.call @menu }.and_return(@pivotal_story)
 
         story = Story.select_story @project
 
         expect(story).to be_a(Story)
-        expect(story.story).to be(@story)
+        expect(story.pivotal_story).to eq(@pivotal_story)
       end
     end
 
     describe '#create_branch!' do
       before do
-        @story.stub(story_type: 'feature', id: '123456', name: 'test', description: 'description')
-        @pstory = GithubPivotalFlow::Story.new(@story)
-        allow(@pstory).to receive(:ask).and_return('test')
+        Git.stub(
+          checkout: nil,
+          pull_remote: nil,
+          create_branch: nil,
+          set_config: nil,
+          get_config: nil,
+          push: nil,
+          commit: nil,
+          get_remote: 'origin',
+        )
+        @pivotal_story.stub(
+            story_type: 'feature',
+            id: '123456',
+            name: 'test',
+            description: 'description')
+        @story = GithubPivotalFlow::Story.new(@project, @pivotal_story)
+        allow(@story).to receive(:ask).and_return('test')
       end
 
       it 'prompts the user for a branch extension name' do
-        Git.stub(checkout: nil, pull_remote: nil, create_branch: nil, set_config: nil, push: nil, commit: nil)
-        expect(@pstory).to receive(:ask).with("Enter branch name (123456-<branch-name>): ").and_return('super-branch')
+        allow(@story).to receive(:branch_prefix).and_return('feature/')
+        expect(@story).to receive(:ask).with("Enter branch name (feature/123456-<branch-name>): ").and_return('super-branch')
 
-        @pstory.create_branch!('Message')
+        @story.create_branch!('Message')
       end
 
       it 'includes a tag to skip the ci build for the initial blank commit' do
         @story.stub(branch_name: 'feature/123456-my_branch')
-        Git.stub(checkout: nil, pull_remote: nil, create_branch: nil, set_config: nil, push: nil)
-        Git.should_receive(:commit).with(hash_including(commit_message: 'Message [ci skip]')).and_return(true)
+        expect(Git).to receive(:commit).with(hash_including(commit_message: 'Message [ci skip]')).and_return(true)
 
-        @pstory.create_branch!('Message')
+        @story.create_branch!('Message')
       end
 
       it 'pushes the local branch and sets the upstream using the -u flag' do
         @story.stub(branch_name: 'feature/123456-my_branch')
-        Git.stub(checkout: nil, pull_remote: nil, create_branch: nil, set_config: nil, commit: nil)
-        Git.should_receive(:push).with(instance_of(String), hash_including(set_upstream: true))
+        expect(Git).to receive(:push).with(instance_of(String), hash_including(set_upstream: true))
 
-        @pstory.create_branch!('Message')
+        @story.create_branch!('Message')
       end
     end
   end

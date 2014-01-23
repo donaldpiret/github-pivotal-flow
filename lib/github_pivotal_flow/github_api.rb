@@ -34,6 +34,15 @@ module GithubPivotalFlow
       end
     end
 
+    def repo_info project
+      get "https://%s/repos/%s/%s" %
+              [api_host(project.host), project.owner, project.name]
+    end
+
+    def repo_exists? project
+      repo_info(project).success?
+    end
+
     # Returns parsed data from the new pull request.
     def create_pullrequest options
       project = options.fetch(:project)
@@ -124,7 +133,7 @@ module GithubPivotalFlow
           create_connection host_url
         end
 
-        req['User-Agent'] = "Hub 1.11.1"
+        req['User-Agent'] = "Github-pivotal-flow #{GithubPivotalFlow::VERSION}"
         apply_authentication(req, url)
         yield req if block_given?
         finalize_request(req, url)
@@ -204,7 +213,6 @@ module GithubPivotalFlow
 
       def obtain_oauth_token host, user, two_factor_code = nil
         auth_url = URI.parse("https://%s@%s/authorizations" % [CGI.escape(user), host])
-
         # dummy request to trigger a 2FA SMS since a HTTP GET won't do it
         post(auth_url) if !two_factor_code
 

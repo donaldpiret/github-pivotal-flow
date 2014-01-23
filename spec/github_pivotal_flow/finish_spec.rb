@@ -18,8 +18,11 @@ module GithubPivotalFlow
           release_prefix: 'release/',
           api_token: 'token',
           project_id: '123',
-          story: @story)
-      allow(Git).to receive(:repository_root)
+          project: @project,
+          github_client: @ghclient,
+          story: @story,
+          validate: true,
+      )
       allow(Configuration).to receive(:new).and_return(@configuration)
       allow(PivotalTracker::Project).to receive(:find).and_return(@project)
       @finish = Finish.new

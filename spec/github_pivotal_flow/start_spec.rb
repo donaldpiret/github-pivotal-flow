@@ -5,9 +5,14 @@ module GithubPivotalFlow
     before do
       $stdout = StringIO.new
       $stderr = StringIO.new
-
-      @project = double('project')
       @story = double('story')
+      @project = double('project')
+      @pivotal_project = double('pivotal_project')
+      @pivotal_story = double('pivotal_story')
+      @project.stub(
+          pivotal_project: @pivotal_project,
+          stories: [@pivotal_story]
+      )
       @ghclient = double('ghclient')
       @ghproject = double('ghproject')
       @configuration = double('configuration')
@@ -19,20 +24,21 @@ module GithubPivotalFlow
           release_prefix: 'release/',
           api_token: 'token',
           project_id: '123',
-          github_project: @ghproject,
-          story: @story)
-      allow(Git).to receive(:repository_root)
-      allow(GitHubAPI).to receive(:new).and_return(@ghclient)
+          project: @project,
+          github_client: @ghclient,
+          story: @story,
+          validate: true,
+      )
       allow(Configuration).to receive(:new).and_return(@configuration)
       allow(PivotalTracker::Project).to receive(:find).and_return(@project)
       @start = Start.new()
     end
 
-    it 'should run' do
+    it 'should runs correctly' do
       @start.options[:args] = 'test_filter'
       @story.stub(:unestimated? => false, :release? => false, params_for_pull_request: {})
 
-      expect(Story).to receive(:select_story).with(@project, 'test_filter').and_return(@story)
+      expect(Story).to receive(:select_story).with(@pivotal_project, 'test_filter').and_return(@story)
       expect(Story).to receive(:pretty_print)
       expect(@story).to receive(:create_branch!)
       expect(Git).to receive(:add_hook)
