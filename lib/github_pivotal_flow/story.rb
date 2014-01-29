@@ -121,9 +121,8 @@ module GithubPivotalFlow
       else
         Git.merge(branch_name, commit_message: commit_message, no_ff: true)
       end
-      Git.tag(name)
       print "Merging #{branch_name} to #{development_branch_name}... "
-      Git checkout(development_branch_name)
+      Git.checkout(development_branch_name)
       Git.pull_remote(development_branch_name)
       if trivial_merge?(development_branch_name)
         Git.merge(branch_name, commit_message: commit_message, ff: true)
@@ -131,6 +130,7 @@ module GithubPivotalFlow
         Git.merge(branch_name, commit_message: commit_message, no_ff: true)
       end
       Git.checkout(master_branch_name)
+      Git.tag(name)
       Git.push(master_branch_name, development_branch_name)
       Git.push_tags
       self.delete_branch!
