@@ -8,7 +8,7 @@ module GithubPivotalFlow
       $stderr = StringIO.new
 
       @project = double('project')
-      @story = double('story')
+      @story = double('story', branch_name: 'feature/1234-sample_story')
       @configuration = double('configuration')
       @configuration.stub(
           development_branch: 'development',
@@ -26,7 +26,23 @@ module GithubPivotalFlow
       allow(Configuration).to receive(:new).and_return(@configuration)
       allow(Project).to receive(:find).and_return(@project)
       @finish = Finish.new
-      expect(@configuration).to receive(:story).and_return(@story)
+      allow(Git).to receive(:current_branch).and_return(@story.branch_name)
+      allow(@configuration).to receive(:story).and_return(@story)
+    end
+
+    it 'fails if you are on the development branch' do
+      allow(Git).to receive(:current_branch).and_return(@configuration.development_branch)
+      expect { @finish.run! }.to raise_error("Cannot finish development branch")
+    end
+
+    it 'fails if you are on the master branch' do
+      allow(Git).to receive(:current_branch).and_return(@configuration.master_branch)
+      expect { @finish.run! }.to raise_error("Cannot finish master branch")
+    end
+
+    it 'fails if we cannot find the story this branch relates to' do
+      allow(@configuration).to receive(:story).and_return(nil)
+      expect { @finish.run! }.to raise_error("Could not find story associated with branch")
     end
 
     it 'merges the branch back to its root by default' do
