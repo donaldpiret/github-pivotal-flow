@@ -163,6 +163,13 @@ module GithubPivotalFlow
 
         @story.create_branch!('Message')
       end
+
+      it 'supports stories with quotes in their name' do
+        @story.stub(name: 'Fancy story with "quotes"', branch_name: 'feature/123456-my_branch')
+        expect(Git).to receive(:commit).with(hash_including(commit_message: 'Starting [feature #123456]: Fancy story with \"quotes\" [ci skip]'))
+
+        @story.create_branch!
+      end
     end
   end
 end

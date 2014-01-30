@@ -80,7 +80,7 @@ module GithubPivotalFlow
     end
 
     def create_branch!(commit_message = nil, options = {})
-      commit_message ||= "Starting [#{story_type} ##{id}]: #{name}"
+      commit_message ||= "Starting [#{story_type} ##{id}]: #{escape_quotes(name)}"
       commit_message << " [ci skip]" unless options[:run_ci]
       print "Creating branch for story with branch name #{branch_name} from #{root_branch_name}... "
       Git.checkout(root_branch_name)
@@ -111,7 +111,7 @@ module GithubPivotalFlow
     end
 
     def merge_release!(commit_message = nil, options = {})
-      commit_message ||= "Release #{name}"
+      commit_message ||= "Release #{escape_quotes(name)}"
       commit_message << "\n\n[#{options[:no_complete] ? '' : 'Completes '}##{id}] "
       print "Merging #{branch_name} to #{master_branch_name}... "
       Git.checkout(master_branch_name)
@@ -287,6 +287,10 @@ module GithubPivotalFlow
       end
       prefix = "#{prefix.strip}/" unless prefix.strip[-1,1] == '/'
       return prefix.strip
+    end
+
+    def escape_quotes(string)
+      string.gsub('"', '\"')
     end
   end
 end
