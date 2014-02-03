@@ -105,13 +105,14 @@ module GithubPivotalFlow
       it 'prompts the user with the story type if no filter is specified' do
         expect(@stories).to receive(:all).with(
             :current_state => %w(rejected unstarted unscheduled),
-            :limit => 5
+            :limit => 5,
+            :story_type => ['feature', 'bug']
         ).and_return([
-                         PivotalTracker::Story.new(:story_type => 'chore', :name => 'name-1'),
+                         PivotalTracker::Story.new(:story_type => 'feature', :name => 'name-1'),
                          PivotalTracker::Story.new(:story_type => 'bug', :name => 'name-2')
                      ])
         expect(@menu).to receive(:prompt=)
-        expect(@menu).to receive(:choice).with('CHORE   name-1')
+        expect(@menu).to receive(:choice).with('FEATURE name-1')
         expect(@menu).to receive(:choice).with('BUG     name-2')
         expect(Story).to receive(:choose) { |&arg| arg.call @menu }.and_return(@pivotal_story)
 

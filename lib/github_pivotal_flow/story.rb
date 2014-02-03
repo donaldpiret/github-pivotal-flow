@@ -253,6 +253,8 @@ module GithubPivotalFlow
       }
       if type
         criteria[:story_type] = type
+      else
+        criteria[:story_type] = ['feature', 'bug']
       end
 
       candidates = project.stories.all criteria
