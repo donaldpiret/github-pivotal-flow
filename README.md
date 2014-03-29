@@ -27,6 +27,7 @@ $ git start       # Creates branch, opens a pull request on Github and starts st
 $ git commit ...
 $ git commit ...  # Your existing development process
 $ git commit ...
+$ git publish ... # Push the branch out to origin and open a pull request on github to gather some feedback
 $ git finish      # Merges back into the main branch. Pushes to origin, destroys branch and finishes story.
 ```
 
@@ -118,6 +119,10 @@ If it doesn't exist already, a `prepare-commit-msg` commit hook is added to your
 #	new file:   dolor.txt
 #
 ```
+
+### `git publish`
+This command pushes your changes back to the origin, and opens a pull request on Github for your branch.
+
 
 ### `git finish [--no-complete]`
 This command finishes a story by merging and cleaning up its branch and then pushing the changes to a remote server.

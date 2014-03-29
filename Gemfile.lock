@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    github-pivotal-flow (0.2.0)
+    github-pivotal-flow (1.0.0)
       highline (~> 1.6)
       pivotal-tracker (~> 0.5)
 
