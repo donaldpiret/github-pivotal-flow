@@ -10,12 +10,6 @@ module GithubPivotalFlow
       story.create_branch!
       @configuration.story = story # Tag the branch with story attributes
       Git.add_hook 'prepare-commit-msg', File.join(File.dirname(__FILE__), 'prepare-commit-msg.sh')
-      unless story.release?
-        print "Creating pull-request on Github... "
-        pull_request_params = story.params_for_pull_request.merge(project: @configuration.project)
-        @configuration.github_client.create_pullrequest(pull_request_params)
-        puts 'OK'
-      end
       story.mark_started!
       return 0
     end

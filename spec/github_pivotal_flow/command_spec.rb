@@ -5,15 +5,10 @@ module GithubPivotalFlow
     before do
       $stdout = StringIO.new
       $stderr = StringIO.new
-      @configuration = double('configuration')
       @project = double('project')
+      @configuration = double('configuration', validate: true, project_id: 123456, project: @project)
       allow(Configuration).to receive(:new).and_return(@configuration)
       allow(PivotalTracker::Project).to receive(:find).and_return(@project)
-      @configuration.stub(
-        validate: true,
-        project_id: 123456,
-        project: @project,
-      )
     end
 
     describe '#initialize' do

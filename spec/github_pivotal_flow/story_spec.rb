@@ -19,9 +19,9 @@ module GithubPivotalFlow
     describe '.pretty_print' do
       it 'pretty-prints story information' do
         story = double('story')
-        story.should_receive(:name)
-        story.should_receive(:description).and_return("description-1\ndescription-2")
-        PivotalTracker::Note.should_receive(:all).and_return([PivotalTracker::Note.new(:noted_at => Date.new, :text => 'note-1')])
+        expect(story).to receive(:name)
+        expect(story).to receive(:description).and_return("description-1\ndescription-2")
+        expect(PivotalTracker::Note).to receive(:all).and_return([PivotalTracker::Note.new(:noted_at => Date.new, :text => 'note-1')])
 
         Story.pretty_print story
 
@@ -35,9 +35,9 @@ module GithubPivotalFlow
 
       it 'does not pretty print description or notes if there are none (empty)' do
         story = double('story')
-        story.should_receive(:name)
-        story.should_receive(:description)
-        PivotalTracker::Note.should_receive(:all).and_return([])
+        expect(story).to receive(:name)
+        expect(story).to receive(:description)
+        expect(PivotalTracker::Note).to receive(:all).and_return([])
 
         Story.pretty_print story
 
@@ -48,9 +48,9 @@ module GithubPivotalFlow
 
       it 'does not pretty print description or notes if there are none (nil)' do
         story = double('story')
-        story.should_receive(:name)
-        story.should_receive(:description).and_return('')
-        PivotalTracker::Note.should_receive(:all).and_return([])
+        expect(story).to receive(:name)
+        expect(story).to receive(:description).and_return('')
+        expect(PivotalTracker::Note).to receive(:all).and_return([])
 
         Story.pretty_print story
 
@@ -125,48 +125,46 @@ module GithubPivotalFlow
 
     describe '#create_branch!' do
       before do
-        Git.stub(
-          checkout: nil,
-          pull_remote: nil,
-          create_branch: nil,
-          set_config: nil,
-          get_config: nil,
-          push: nil,
-          commit: nil,
-          get_remote: 'origin',
-        )
-        @pivotal_story.stub(
-            story_type: 'feature',
-            id: '123456',
-            name: 'test',
-            description: 'description')
+        allow(Git).to receive(:checkout).and_return(nil)
+        allow(Git).to receive(:pull_remote).and_return(nil)
+        allow(Git).to receive(:create_branch).and_return(nil)
+        allow(Git).to receive(:set_config).and_return(nil)
+        allow(Git).to receive(:get_config).and_return(nil)
+        allow(Git).to receive(:push).and_return(nil)
+        allow(Git).to receive(:commit).and_return(nil)
+        allow(Git).to receive(:get_remote).and_return(nil)
+        allow(@pivotal_story).to receive(:story_type).and_return('feature')
+        allow(@pivotal_story).to receive(:id).and_return('123456')
+        allow(@pivotal_story).to receive(:name).and_return('test')
+        allow(@pivotal_story).to receive(:description).and_return('description')
         @story = GithubPivotalFlow::Story.new(@project, @pivotal_story)
         allow(@story).to receive(:ask).and_return('test')
       end
 
       it 'prompts the user for a branch extension name' do
         allow(@story).to receive(:branch_prefix).and_return('feature/')
-        expect(@story).to receive(:ask).with("Enter branch name (feature/123456-<branch-name>): ").and_return('super-branch')
+        expect(@story).to receive(:ask).with("Enter branch name (feature/<branch-name>): ").and_return('super-branch')
 
         @story.create_branch!('Message')
       end
 
       it 'includes a tag to skip the ci build for the initial blank commit' do
-        @story.stub(branch_name: 'feature/123456-my_branch')
+        allow(@story).to receive(:branch_name).and_return('feature/123456-my_branch')
         expect(Git).to receive(:commit).with(hash_including(commit_message: 'Message [ci skip]')).and_return(true)
 
         @story.create_branch!('Message')
       end
 
       it 'pushes the local branch and sets the upstream using the -u flag' do
-        @story.stub(branch_name: 'feature/123456-my_branch')
+        allow(@story).to receive(:branch_name).and_return('feature/123456-my_branch')
         expect(Git).to receive(:push).with(instance_of(String), hash_including(set_upstream: true))
 
         @story.create_branch!('Message')
       end
 
       it 'supports stories with quotes in their name' do
-        @story.stub(name: 'Fancy story with "quotes"', branch_name: 'feature/123456-my_branch')
+        allow(@story).to receive(:name).and_return('Fancy story with "quotes"')
+        allow(@story).to receive(:branch_name).and_return('feature/123456-my_branch')
         expect(Git).to receive(:commit).with(hash_including(commit_message: 'Starting [feature #123456]: Fancy story with \"quotes\" [ci skip]'))
 
         @story.create_branch!

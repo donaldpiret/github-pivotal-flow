@@ -164,8 +164,8 @@ module GithubPivotalFlow
         # For release branches the format is release/5.0
         "#{Git.get_config(KEY_RELEASE_PREFIX, :inherited)}#{branch_name}"
       else
-        n = "#{branch_prefix}#{story_id}"
-        n << "-#{branch_name}" unless branch_name.blank?
+        n = "#{branch_prefix}"
+        n << "#{branch_name}" unless branch_name.blank?
         n
       end
     end

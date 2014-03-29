@@ -9,8 +9,8 @@ module GithubPivotalFlow
     end
 
     it 'should return result when exit code is 0' do
-      Shell.should_receive(:`).with('test_command').and_return('test_result')
-      $?.should_receive(:exitstatus).and_return(0)
+      expect(Shell).to receive(:`).with('test_command').and_return('test_result')
+      expect($?).to receive(:exitstatus).and_return(0)
 
       result = Shell.exec 'test_command'
 
@@ -18,17 +18,17 @@ module GithubPivotalFlow
     end
 
     it "should abort with 'FAIL' when the exit code is not 0" do
-      Shell.should_receive(:`).with('test_command')
-      $?.should_receive(:exitstatus).and_return(-1)
+      expect(Shell).to receive(:`).with('test_command')
+      expect($?).to receive(:exitstatus).and_return(-1)
 
-      lambda { Shell.exec 'test_command' }.should raise_error(SystemExit)
+      expect { Shell.exec 'test_command' }.to raise_error
 
       expect($stderr.string).to match(/FAIL/)
     end
 
     it 'should return result when the exit code is not 0 and told not to abort on failure' do
-      Shell.should_receive(:`).with('test_command')
-      $?.should_receive(:exitstatus).and_return(-1)
+      expect(Shell).to receive(:`).with('test_command')
+      expect($?).to receive(:exitstatus).and_return(-1)
 
       Shell.exec 'test_command', false
     end

@@ -9,19 +9,18 @@ module GithubPivotalFlow
 
       @project = double('project')
       @story = double('story', branch_name: 'feature/1234-sample_story')
-      @configuration = double('configuration')
-      @configuration.stub(
-          development_branch: 'development',
-          master_branch: 'master',
-          feature_prefix: 'feature/',
-          hotfix_prefix: 'hotfix/',
-          release_prefix: 'release/',
-          api_token: 'token',
-          project_id: '123',
-          project: @project,
-          github_client: @ghclient,
-          story: @story,
-          validate: true,
+      @configuration = double('configuration',
+        development_branch: 'development',
+        master_branch: 'master',
+        feature_prefix: 'feature/',
+        hotfix_prefix: 'hotfix/',
+        release_prefix: 'release/',
+        api_token: 'token',
+        project_id: '123',
+        project: @project,
+        github_client: @ghclient,
+        story: @story,
+        validate: true
       )
       allow(Configuration).to receive(:new).and_return(@configuration)
       allow(Project).to receive(:find).and_return(@project)
