@@ -155,9 +155,9 @@ module GithubPivotalFlow
         @story.create_branch!('Message')
       end
 
-      it 'pushes the local branch and sets the upstream using the -u flag' do
+      it 'does not push the local branch' do
         allow(@story).to receive(:branch_name).and_return('feature/123456-my_branch')
-        expect(Git).to receive(:push).with(instance_of(String), hash_including(set_upstream: true))
+        expect(Git).to_not receive(:push)
 
         @story.create_branch!('Message')
       end

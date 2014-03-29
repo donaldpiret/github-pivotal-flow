@@ -103,7 +103,6 @@ module GithubPivotalFlow
       end
     end
 
-    #FIXME: Can't seem to set an expectation on File for some reason...
     describe '.add_hook' do
       it 'does not add a hook if it already exists' do
         Dir.mktmpdir do |root|

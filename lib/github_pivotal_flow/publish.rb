@@ -1,14 +1,13 @@
 # The class that encapsulates finishing a Pivotal Tracker Story
 module GithubPivotalFlow
-  class Finish < Command
+  class Publish < Command
 
     # Publishes the branch and opens the pull request
     def run!
       story = @configuration.story
       fail("Could not find story associated with branch") unless story
-      #TODO: Check for uncommitted changes
-
-      Git.push(branch_name, set_upstream: true)
+      Git.clean_working_tree?
+      Git.push(story.branch_name, set_upstream: true)
       unless story.release?
         print "Creating pull-request on Github... "
         pull_request_params = story.params_for_pull_request.merge(project: @configuration.project)

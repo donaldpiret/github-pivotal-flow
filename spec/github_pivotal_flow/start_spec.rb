@@ -7,8 +7,7 @@ module GithubPivotalFlow
       $stderr = StringIO.new
       @story = double('story',
         unestimated?: false,
-        release?: false,
-        params_for_pull_request: {}
+        release?: false
       )
       @project = double('project',
         stories: [@story]

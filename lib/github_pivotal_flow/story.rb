@@ -91,7 +91,6 @@ module GithubPivotalFlow
       Git.set_config('root-branch', root_branch_name, :branch)
       Git.set_config('root-remote', root_origin, :branch)
       Git.commit(commit_message: commit_message, allow_empty: true)
-      Git.push(branch_name, set_upstream: true)
     end
 
     def merge_to_root!(commit_message = nil, options = {})
