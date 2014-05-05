@@ -86,7 +86,7 @@ module GithubPivotalFlow
       Git.checkout(root_branch_name)
       root_origin = Git.get_remote
       Git.pull_remote
-      Git.create_branch(branch_name, root_branch_name)
+      Git.create_branch(branch_name, root_branch_name, set_upstream: true)
       Git.checkout(branch_name)
       Git.set_config('root-branch', root_branch_name, :branch)
       Git.set_config('root-remote', root_origin, :branch)
