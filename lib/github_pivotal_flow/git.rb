@@ -29,7 +29,9 @@ module GithubPivotalFlow
 
     def self.create_branch(branch_name, start_point = nil, options = {})
       return if branch_exists?(branch_name)
-      exec "git branch --quiet #{[branch_name, start_point].compact.join(' ')}"
+      command = "git branch --quiet"
+      command << " --set-upstream" if options[:set_upstream]
+      exec "#{command} #{[branch_name, start_point].compact.join(' ')}"
       puts 'OK'
     end
 
