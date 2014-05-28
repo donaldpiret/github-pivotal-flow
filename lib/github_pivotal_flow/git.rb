@@ -68,8 +68,12 @@ module GithubPivotalFlow
       exec command
     end
 
-    def self.tag(tag_name)
-      exec "git tag #{tag_name}"
+    def self.tag(tag_name, options = {})
+      command = "git tag"
+      command << " -a" if options[:annotated]
+      command << " -m \"#{options[:message]}\"" unless options[:message].blank?
+      command << " #{tag_name}" if tag_name
+      exec command
     end
 
     def self.delete_branch(branch_name, options = {})

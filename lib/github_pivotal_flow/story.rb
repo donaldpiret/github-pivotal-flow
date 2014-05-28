@@ -129,7 +129,7 @@ module GithubPivotalFlow
         Git.merge(branch_name, commit_message: commit_message, no_ff: true)
       end
       Git.checkout(master_branch_name)
-      Git.tag(name)
+      Git.tag(name, annotated: true, message: "Release #{escape_quotes(name)}")
       Git.push(master_branch_name, development_branch_name)
       Git.push_tags
       self.delete_branch!
