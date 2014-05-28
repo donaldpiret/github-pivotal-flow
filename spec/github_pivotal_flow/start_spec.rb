@@ -2,6 +2,8 @@ require 'spec_helper'
 
 module GithubPivotalFlow
   describe Start do
+    let(:fake_git) { double('Git').as_null_object }
+    
     before do
       $stdout = StringIO.new
       $stderr = StringIO.new
@@ -30,7 +32,6 @@ module GithubPivotalFlow
       allow(Configuration).to receive(:new).and_return(@configuration)
       allow(PivotalTracker::Project).to receive(:find).and_return(@project)
       allow(@story).to receive(:create_branch!).and_return(true)
-      allow(Git).to receive(:add_hook)
       allow(@configuration).to receive(:story=).with(@story).and_return(true)
       allow(@story).to receive(:mark_started!)
       @start = Start.new()

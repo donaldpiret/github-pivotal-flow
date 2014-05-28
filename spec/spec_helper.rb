@@ -17,6 +17,8 @@ require 'simplecov'
 
 require 'github_pivotal_flow'
 
+require 'byebug'
+
 SimpleCov.start do
   add_filter 'spec'
 end
@@ -24,4 +26,10 @@ end
 RSpec.configure do |config|
   config.run_all_when_everything_filtered = true
   config.filter_run :focus
+  
+  config.before(:each) do
+    if defined?(fake_git) && fake_git
+      stub_const('GithubPivotalFlow::Git', fake_git)
+    end
+  end
 end

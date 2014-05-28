@@ -2,6 +2,7 @@ require 'spec_helper'
 
 module GithubPivotalFlow
   describe Configuration do
+    let(:fake_git) { double('Git').as_null_object }
 
     before do
       $stdout = StringIO.new

@@ -2,6 +2,8 @@ require 'spec_helper'
 
 module GithubPivotalFlow
   describe Publish do
+    let(:fake_git) { double('Git').as_null_object }
+    
     before do
       $stdout = StringIO.new
       $stderr = StringIO.new
@@ -39,8 +41,7 @@ module GithubPivotalFlow
     end
 
     it 'fails with a dirty working tree' do
-      allow(Shell).to receive(:exec).with("git diff --no-ext-diff --ignore-submodules --quiet --exit-code", false).and_return(true)
-      allow(Shell).to receive(:exec).with("git diff-index --cached --quiet --ignore-submodules HEAD --", false).and_raise "fatal: Index contains uncommited changes. Aborting."
+      expect(Git).to receive(:clean_working_tree?).and_raise(RuntimeError)
       expect { @publish.run! }.to raise_error(RuntimeError)
     end
 

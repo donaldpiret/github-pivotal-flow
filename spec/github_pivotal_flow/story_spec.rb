@@ -2,6 +2,7 @@ require 'spec_helper'
 
 module GithubPivotalFlow
   describe Story do
+    let(:fake_git) { double('Git').as_null_object }
 
     before do
       $stdout = StringIO.new
@@ -125,14 +126,6 @@ module GithubPivotalFlow
 
     describe '#create_branch!' do
       before do
-        allow(Git).to receive(:checkout).and_return(nil)
-        allow(Git).to receive(:pull_remote).and_return(nil)
-        allow(Git).to receive(:create_branch).and_return(nil)
-        allow(Git).to receive(:set_config).and_return(nil)
-        allow(Git).to receive(:get_config).and_return(nil)
-        allow(Git).to receive(:push).and_return(nil)
-        allow(Git).to receive(:commit).and_return(nil)
-        allow(Git).to receive(:get_remote).and_return(nil)
         allow(@pivotal_story).to receive(:story_type).and_return('feature')
         allow(@pivotal_story).to receive(:id).and_return('123456')
         allow(@pivotal_story).to receive(:name).and_return('test')
@@ -168,6 +161,54 @@ module GithubPivotalFlow
         expect(Git).to receive(:commit).with(hash_including(commit_message: 'Starting [feature #123456]: Fancy story with \"quotes\" [ci skip]'))
 
         @story.create_branch!
+      end
+    end
+    
+    describe '#merge_release!' do
+      before do
+        allow(@pivotal_story).to receive(:story_type).and_return('release')
+        allow(@pivotal_story).to receive(:id).and_return('123456')
+        allow(@pivotal_story).to receive(:name).and_return('v1.5.1')
+        @story = GithubPivotalFlow::Story.new(@project, @pivotal_story)
+        allow(@story).to receive(:branch_prefix).and_return('release/')
+        allow(@story).to receive(:branch_name).and_return('release/v1.5.1')
+      end
+      
+      context 'if the merge is trivial' do
+        before do
+          allow(@story).to receive(:trivial_merge?).and_return(true)
+        end
+        
+        it 'merges using fast-forward' do
+          expect(Git).to receive(:merge).with('release/v1.5.1', hash_including(ff: true))
+          
+          @story.merge_release!
+        end
+      end
+      
+      context 'with a non-trivial merge' do
+        before do
+          allow(@story).to receive(:trivial_merge?).and_return(false)
+        end
+        
+        it 'merges using no-ff' do
+          expect(Git).to receive(:merge).with('release/v1.5.1', hash_including(no_ff: true))
+          
+          @story.merge_release!
+        end
+      end
+      
+      context 'when the branch is successfully merged' do
+        before do
+          allow(@story).to receive(:trivial_merge?).and_return(true)
+          allow(Git).to receive(:merge).and_return(true)
+        end
+        
+        it 'creates an annotated tag with the release name and short description' do
+          expect(Git).to receive(:tag).with('v1.5.1', hash_including(annotated: true, message: 'Release v1.5.1'))
+      
+          @story.merge_release!
+        end
       end
     end
   end

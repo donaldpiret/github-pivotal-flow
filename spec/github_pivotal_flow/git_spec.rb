@@ -17,6 +17,19 @@ module GithubPivotalFlow
         expect(current_branch).to eq('dev_branch')
       end
     end
+    
+    describe '.clean_working_tree?' do
+      context 'with a dirty working tree' do
+        before do
+          allow(Shell).to receive(:exec).with("git diff --no-ext-diff --ignore-submodules --quiet --exit-code", false).and_return(true)
+          allow(Shell).to receive(:exec).with("git diff-index --cached --quiet --ignore-submodules HEAD --", false).and_raise "fatal: Index contains uncommited changes. Aborting."
+        end
+        
+        it 'raises a runtime error' do
+          expect { Git.clean_working_tree? }.to raise_error(RuntimeError)  
+        end
+      end
+    end
 
     describe '.repository_root' do
       it 'returns the repository root' do
