@@ -23,7 +23,8 @@ module GithubPivotalFlow
         self.name ||= path_components[2]
         self.host ||= url.host
       end
-      self.name = self.name.tr(' ', '-').sub(/\.git$/, '')
+      self.name = self.name.tr(' ', '-').sub(/\.git$/, '') if self.name
+      self.name ||= File.basename(Dir.getwd)
       self.host ||= 'github.com'
       self.host = host.sub(/^ssh\./i, '') if 'ssh.github.com' == host.downcase
     end

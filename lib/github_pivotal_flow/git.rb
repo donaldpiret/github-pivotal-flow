@@ -107,9 +107,9 @@ module GithubPivotalFlow
 
     def self.get_config(key, scope = :inherited)
       if :branch == scope
-        exec("git config branch.#{self.current_branch}.#{key}", false).strip
+        exec("git config --get branch.#{self.current_branch}.#{key}", false).strip
       elsif :inherited == scope
-        exec("git config #{key}", false).strip
+        exec("git config --get #{key}", false).strip
       else
         raise "Unable to get Git configuration for scope '#{scope}'"
       end
