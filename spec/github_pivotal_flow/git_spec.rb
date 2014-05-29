@@ -63,7 +63,7 @@ module GithubPivotalFlow
     describe '.get_config' do
       it 'gets configuration scoped by branch when :branch scope is specified' do
         expect(Git).to receive(:current_branch).and_return('test_branch_name')
-        expect(Shell).to receive(:exec).with('git config branch.test_branch_name.test_key', false).and_return('test_value')
+        expect(Shell).to receive(:exec).with('git config --get branch.test_branch_name.test_key', false).and_return('test_value')
 
         value = Git.get_config 'test_key', :branch
 
@@ -71,7 +71,7 @@ module GithubPivotalFlow
       end
 
       it 'gets configuration when :inherited scope is specified' do
-        expect(Shell).to receive(:exec).with('git config test_key', false).and_return('test_value')
+        expect(Shell).to receive(:exec).with('git config --get test_key', false).and_return('test_value')
 
         value = Git.get_config 'test_key', :inherited
 
