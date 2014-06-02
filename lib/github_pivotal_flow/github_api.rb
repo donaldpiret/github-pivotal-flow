@@ -78,7 +78,7 @@ module GithubPivotalFlow
       module ResponseMethods
         def status() code.to_i end
         def data?() content_type =~ /\bjson\b/ end
-        def data() @data ||= JSON.parse(body) end
+        def data() @data ||= MultiJson.parse(body) end
         def error_message?() data? and data['errors'] || data['message'] end
         def error_message() error_sentences || data['message'] end
         def success?() Net::HTTPSuccess === self end
@@ -104,7 +104,7 @@ module GithubPivotalFlow
       def post url, params = nil
         perform_request url, :Post do |req|
           if params
-            req.body = JSON.dump params
+            req.body = MultiJson.dump params
             req['Content-Type'] = 'application/json;charset=utf-8'
           end
           yield req if block_given?

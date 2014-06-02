@@ -3,6 +3,7 @@ PATH
   specs:
     github-pivotal-flow (1.0.1)
       highline (~> 1.6)
+      multi_json (~> 1.8)
       pivotal-tracker (~> 0.5)
 
 GEM
