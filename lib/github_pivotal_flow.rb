@@ -17,6 +17,7 @@ $:.unshift(File.dirname(__FILE__))
 
 require 'highline/import'
 require 'pivotal-tracker'
+require 'multi_json'
 
 require File.join('core_ext', 'object', 'blank')
 

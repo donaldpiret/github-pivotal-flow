@@ -78,7 +78,7 @@ module GithubPivotalFlow
       module ResponseMethods
         def status() code.to_i end
         def data?() content_type =~ /\bjson\b/ end
-        def data() @data ||= MultiJson.parse(body) end
+        def data() @data ||= MultiJson.load(body) end
         def error_message?() data? and data['errors'] || data['message'] end
         def error_message() error_sentences || data['message'] end
         def success?() Net::HTTPSuccess === self end
