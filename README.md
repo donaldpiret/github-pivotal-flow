@@ -1,7 +1,7 @@
 # Github Pivotal Flow
 
 [![Gem Version](https://badge.fury.io/rb/github-pivotal-flow.svg)](http://badge.fury.io/rb/github-pivotal-flow)
-<img src="https://travis-ci.org/roomorama/github-pivotal-flow.png" data-bindattr-34="34" title="Build Status Images">
+<img src="https://travis-ci.org/donaldpiret/github-pivotal-flow.png" data-bindattr-34="34" title="Build Status Images">
 
 `github-pivotal-flow` provides a set of additional Git commands to help developers when working with [Pivotal Tracker][pivotal-tracker], git-flow and Github pull requests.
 It follows the branch structure recommended by [Git flow][git-flow].
