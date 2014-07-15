@@ -79,18 +79,16 @@ module GithubPivotalFlow
       puts 'OK'
     end
 
-    def create_branch!(commit_message = nil, options = {})
-      commit_message ||= "Starting [#{story_type} ##{id}]: #{escape_quotes(name)}"
-      commit_message << " [ci skip]" unless options[:run_ci]
-      print "Creating branch for story with branch name #{branch_name} from #{root_branch_name}... "
+    def create_branch!(options = {})
       Git.checkout(root_branch_name)
       root_origin = Git.get_remote
+      remote_branch_name = [root_origin, root_branch_name].join('/')
+      print "Creating branch for story with branch name #{branch_name} from #{remote_branch_name}... "
       Git.pull_remote
-      Git.create_branch(branch_name, root_branch_name, set_upstream: true)
+      Git.create_branch(branch_name, remote_branch_name, track: true)
       Git.checkout(branch_name)
       Git.set_config('root-branch', root_branch_name, :branch)
       Git.set_config('root-remote', root_origin, :branch)
-      Git.commit(commit_message: commit_message, allow_empty: true)
     end
 
     def merge_to_root!(commit_message = nil, options = {})

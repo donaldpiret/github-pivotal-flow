@@ -17,8 +17,6 @@ require 'simplecov'
 
 require 'github_pivotal_flow'
 
-require 'byebug'
-
 SimpleCov.start do
   add_filter 'spec'
 end

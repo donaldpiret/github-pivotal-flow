@@ -181,7 +181,7 @@ module GithubPivotalFlow
       end
 
       it 'supports passing in the set_upstream option after a ref' do
-        expect(Shell).to receive(:exec).with('git push --quiet -u origin foo', true)
+        expect(Shell).to receive(:exec).with('git push --quiet --set-upstream origin foo', true)
 
         Git.push 'foo', set_upstream: true
       end

@@ -138,27 +138,19 @@ module GithubPivotalFlow
         allow(@story).to receive(:branch_prefix).and_return('feature/')
         expect(@story).to receive(:ask).with("Enter branch name (feature/<branch-name>): ").and_return('super-branch')
 
-        @story.create_branch!('Message')
+        @story.create_branch!
       end
 
-      it 'includes a tag to skip the ci build for the initial blank commit' do
+      it 'does not create an initial commit' do
         allow(@story).to receive(:branch_name).and_return('feature/123456-my_branch')
-        expect(Git).to receive(:commit).with(hash_including(commit_message: 'Message [ci skip]')).and_return(true)
+        expect(Git).to_not receive(:commit)
 
-        @story.create_branch!('Message')
+        @story.create_branch!
       end
 
       it 'does not push the local branch' do
         allow(@story).to receive(:branch_name).and_return('feature/123456-my_branch')
         expect(Git).to_not receive(:push)
-
-        @story.create_branch!('Message')
-      end
-
-      it 'supports stories with quotes in their name' do
-        allow(@story).to receive(:name).and_return('Fancy story with "quotes"')
-        allow(@story).to receive(:branch_name).and_return('feature/123456-my_branch')
-        expect(Git).to receive(:commit).with(hash_including(commit_message: 'Starting [feature #123456]: Fancy story with \"quotes\" [ci skip]'))
 
         @story.create_branch!
       end

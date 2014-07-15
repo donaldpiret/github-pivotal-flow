@@ -30,6 +30,7 @@ module GithubPivotalFlow
     def self.create_branch(branch_name, start_point = nil, options = {})
       return if branch_exists?(branch_name)
       command = "git branch --quiet"
+      command << " --track" if options[:track]
       command << " --set-upstream" if options[:set_upstream]
       exec "#{command} #{[branch_name, start_point].compact.join(' ')}"
       puts 'OK'
@@ -96,7 +97,7 @@ module GithubPivotalFlow
 
       print "Pushing to #{remote}... "
       command = "git push --quiet"
-      command << " -u" if options[:set_upstream]
+      command << " --set-upstream" if options[:set_upstream]
       exec "#{command} #{remote} " + refs.join(' ')
       puts 'OK'
     end
