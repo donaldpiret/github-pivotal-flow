@@ -92,16 +92,12 @@ module GithubPivotalFlow
     end
 
     def merge_to_root!(commit_message = nil, options = {})
-      commit_message ||= "Merge #{branch_name} to #{root_branch_name}"
+      commit_message = "Merge #{branch_name} to #{root_branch_name}" if commit_message.blank?
       commit_message << "\n\n[#{options[:no_complete] ? '' : 'Completes '}##{id}] "
       print "Merging #{branch_name} to #{root_branch_name}... "
       Git.checkout(root_branch_name)
       Git.pull_remote(root_branch_name)
-      if trivial_merge?
-        Git.merge(branch_name, commit_message: commit_message, ff: true)
-      else
-        Git.merge(branch_name, commit_message: commit_message, no_ff: true)
-      end
+      Git.merge(branch_name, commit_message: commit_message, no_ff: true)
       Git.push(root_branch_name)
       self.delete_branch!
       self.cleanup!
