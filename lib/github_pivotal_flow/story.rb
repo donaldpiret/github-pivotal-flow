@@ -166,7 +166,7 @@ module GithubPivotalFlow
     def root_branch_name
       case story_type
       when 'chore'
-        master_branch_name
+        self.labels.include?('hotfix') ? master_branch_name : development_branch_name
       when 'bug'
         self.labels.include?('hotfix') ? master_branch_name : development_branch_name
       else
