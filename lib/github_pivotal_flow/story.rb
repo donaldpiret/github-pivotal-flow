@@ -229,10 +229,10 @@ module GithubPivotalFlow
     end
 
     def self.print_value(value)
-      if value.nil? || value.empty?
+      if value.blank?
         puts ''
       else
-        value.scan(/\S.{0,#{CONTENT_WIDTH - 2}}\S(?=\s|$)|\S+/).each_with_index do |line, index|
+        value.to_s.scan(/\S.{0,#{CONTENT_WIDTH - 2}}\S(?=\s|$)|\S+/).each_with_index do |line, index|
           if index == 0
             puts line
           else

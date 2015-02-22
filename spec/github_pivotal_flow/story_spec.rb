@@ -20,42 +20,45 @@ module GithubPivotalFlow
     describe '.pretty_print' do
       it 'pretty-prints story information' do
         story = double('story')
+        expect(story).to receive(:id).and_return(135468)
         expect(story).to receive(:name)
         expect(story).to receive(:description).and_return("description-1\ndescription-2")
         expect(PivotalTracker::Note).to receive(:all).and_return([PivotalTracker::Note.new(:noted_at => Date.new, :text => 'note-1')])
 
         Story.pretty_print story
 
-        expect($stdout.string).to eq(
+        expect($stdout.string).to eq( "         ID: 135468\n" +
                                       "      Title: \n" +
-                                          "Description: description-1\n" +
-                                          "             description-2\n" +
-                                          "     Note 1: note-1\n" +
-                                          "\n")
+                                      "Description: description-1\n" +
+                                      "             description-2\n" +
+                                      "     Note 1: note-1\n" +
+                                      "\n")
       end
 
       it 'does not pretty print description or notes if there are none (empty)' do
         story = double('story')
+        expect(story).to receive(:id).and_return(135468)
         expect(story).to receive(:name)
         expect(story).to receive(:description)
         expect(PivotalTracker::Note).to receive(:all).and_return([])
 
         Story.pretty_print story
 
-        expect($stdout.string).to eq(
+        expect($stdout.string).to eq( "         ID: 135468\n" +
                                       "      Title: \n" +
                                           "\n")
       end
 
       it 'does not pretty print description or notes if there are none (nil)' do
         story = double('story')
+        expect(story).to receive(:id).and_return(135468)
         expect(story).to receive(:name)
         expect(story).to receive(:description).and_return('')
         expect(PivotalTracker::Note).to receive(:all).and_return([])
 
         Story.pretty_print story
 
-        expect($stdout.string).to eq(
+        expect($stdout.string).to eq( "         ID: 135468\n" +
                                       "      Title: \n" +
                                           "\n")
       end

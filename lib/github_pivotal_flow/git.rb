@@ -171,9 +171,9 @@ module GithubPivotalFlow
     end
 
     def self.clean_working_tree?
-      exec("git diff --no-ext-diff --ignore-submodules --quiet --exit-code", false)
+      system("git diff --no-ext-diff --ignore-submodules --quiet --exit-code")
       fail("fatal: Working tree contains unstaged changes. Aborting.") if $?.exitstatus != 0
-      exec("git diff-index --cached --quiet --ignore-submodules HEAD --", false)
+      system("git diff-index --cached --quiet --ignore-submodules HEAD --")
       fail("fatal: Index contains uncommited changes. Aborting.") if $?.exitstatus != 0
       return true
     end
