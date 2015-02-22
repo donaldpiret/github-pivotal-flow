@@ -9,6 +9,8 @@ module GithubPivotalFlow
     # @param [PivotalTracker::Story] story the story to pretty print
     # @return [void]
     def self.pretty_print(story)
+      print_label LABEL_ID
+      print_value story.id
       print_label LABEL_TITLE
       print_value story.name
 
@@ -217,6 +219,7 @@ module GithubPivotalFlow
     private
     CANDIDATE_STATES = %w(rejected unstarted unscheduled).freeze
     LABEL_DESCRIPTION = 'Description'.freeze
+    LABEL_ID = 'ID'.freeze
     LABEL_TITLE = 'Title'.freeze
     LABEL_WIDTH = (LABEL_DESCRIPTION.length + 2).freeze
     CONTENT_WIDTH = (HighLine.new.output_cols - LABEL_WIDTH).freeze
