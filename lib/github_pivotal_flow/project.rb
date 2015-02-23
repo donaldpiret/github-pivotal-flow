@@ -12,7 +12,7 @@ module GithubPivotalFlow
         instance_variable_set("@#{k}", v) unless v.nil?
       end
       url = Git.get_config("remote.#{Git.get_remote}.url")
-      if (matchdata = /^git@([a-z0-9\._-]+):([a-z0-9_-]+)\/([a-z0-9_-]+)(\.git)?$/.match(url.strip))
+      if (matchdata = /^git@([a-z0-9\._-]+):([a-z0-9_-]+)\/([a-z0-9_-]+)(\.git)?$/i.match(url.strip))
         self.host ||= matchdata[1]
         self.owner ||= matchdata[2]
         self.name ||= matchdata[3]
