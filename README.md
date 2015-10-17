@@ -24,7 +24,7 @@ $ gem install github-pivotal-flow
 The typical workflow looks something like the following:
 
 ```plain
-$ git start       # Creates branch, opens a pull request on Github and starts story
+$ git start       # Creates branch from your [development] branch and starts story
 $ git commit ...
 $ git commit ...  # Your existing development process
 $ git commit ...
@@ -46,7 +46,6 @@ In order to use `github-pivotal-flow`, a few Git client configuration properties
 | `gitflow.branch.development` | The Git-flow development branch name. The branch that is commonly used for your development.
 | `gitflow.prefix.feature` | Git-flow feature branch name prefix.
 | `gitflow.prefix.hotfix` | Git-flow hotfix branch name prefix.
-| `gitflow.prefix.feature` | Git-flow feature branch name prefix.
 | `gitflow.prefix.release` | Git-flow release branch name prefix.
 
 [profile]: https://www.pivotaltracker.com/profile
