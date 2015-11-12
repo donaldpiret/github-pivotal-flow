@@ -50,7 +50,6 @@ module GithubPivotalFlow
     # @param [Project] project the Project for this repo
     # @param [PivotalTracker::Story] pivotal_story the Pivotal tracker story to wrap
     def initialize(project, pivotal_story, options = {})
-      puts "options: #{options}"
       raise "Invalid PivotalTracker::Story" if pivotal_story.nil?
       @project = project
       @pivotal_story = pivotal_story
@@ -59,7 +58,6 @@ module GithubPivotalFlow
       @branch_suffix = @branch_name.split('-').last if @branch_name
       @branch_suffix ||= nil
       @is_hotfix = options[:is_hotfix]
-      print "is_hotfix: #{@is_hotfix}"
     end
 
     def release?
@@ -90,9 +88,9 @@ module GithubPivotalFlow
       Git.checkout(branch_from)
       root_origin = Git.get_remote
       remote_branch_name = [root_origin, branch_from].join('/')
-      print "Creating branch for story with branch name #{branch_name} from #{branch_from}... "
+      print "Creating branch for story with branch name #{branch_name} from #{remote_branch_name}... "
       Git.pull_remote
-      Git.create_branch(branch_name, branch_from, track: true)
+      Git.create_branch(branch_name, remote_branch_name, track: true)
       Git.checkout(branch_name)
       Git.set_config(KEY_ROOT_BRANCH, branch_from, :branch)
       Git.set_config(KEY_ROOT_REMOTE, root_origin, :branch)
@@ -106,7 +104,6 @@ module GithubPivotalFlow
       Git.pull_remote(root_branch_name)
       Git.merge(branch_name, commit_message: commit_message, no_ff: true)
       Git.push(root_branch_name)
-      self.delete_branch!
       if root_branch_name == master_branch_name
         commit_message = "Merge #{branch_name} to #{development_branch_name}" if commit_message.blank?
         commit_message << "\n\n[#{options[:no_complete] ? '' : 'Completes '}##{id}] "
@@ -116,6 +113,7 @@ module GithubPivotalFlow
         Git.merge(branch_name, commit_message: commit_message, no_ff: true)
         Git.push(development_branch_name)
       end
+      self.delete_branch!
       self.cleanup!
     end
 
@@ -180,7 +178,7 @@ module GithubPivotalFlow
     end
 
     def root_branch_name
-      Git.get_config(KEY_ROOT_BRANCH, :inherited)
+      Git.get_config(KEY_ROOT_BRANCH, :branch)
     end
 
     def determine_root_branch_name
@@ -297,7 +295,6 @@ module GithubPivotalFlow
     end
 
     def branch_prefix
-      print "hotfix: #{@is_hotfix}"
       if is_hotfix
         prefix = Git.get_config(KEY_HOTFIX_PREFIX, :inherited)
       else
