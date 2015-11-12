@@ -1,8 +1,7 @@
 # Utilities for dealing with +PivotalTracker::Story+s
 module GithubPivotalFlow
   class Story
-    attr_accessor :pivotal_story, :project, :branch_name, :root_branch_name
-    attr :is_hotfix, :user_defined_root_branch_name
+    attr_accessor :pivotal_story, :project, :branch_name, :root_branch_name, :is_hotfix, :user_defined_root_branch_name
 
     # Print a human readable version of a story.  This pretty prints the title,
     # description, and notes for the story.
@@ -39,18 +38,19 @@ module GithubPivotalFlow
     #   * +nil+: offers the user a selection of stories of all types
     # @param [Fixnum] limit The number maximum number of stories the user can choose from
     # @return [PivotalTracker::Story] The Pivotal Tracker story selected by the user
-    def self.select_story(project, filter = nil, limit = 5, root_branch_name = nil, is_hotfix = false)
+    def self.select_story(project, filter = nil, limit = 5, options = {})
       if filter =~ /[[:digit:]]/
         story = project.stories.find filter.to_i
       else
         story = find_story project, filter, limit
       end
-      self.new(project, story, root_branch_name = root_branch_name, is_hotfix = is_hotfix)
+      self.new(project, story, options = options)
     end
 
     # @param [Project] project the Project for this repo
     # @param [PivotalTracker::Story] pivotal_story the Pivotal tracker story to wrap
     def initialize(project, pivotal_story, options = {})
+      puts "options: #{options}"
       raise "Invalid PivotalTracker::Story" if pivotal_story.nil?
       @project = project
       @pivotal_story = pivotal_story
@@ -59,6 +59,7 @@ module GithubPivotalFlow
       @branch_suffix = @branch_name.split('-').last if @branch_name
       @branch_suffix ||= nil
       @is_hotfix = options[:is_hotfix]
+      print "is_hotfix: #{@is_hotfix}"
     end
 
     def release?
@@ -85,15 +86,16 @@ module GithubPivotalFlow
     end
 
     def create_branch!(options = {})
-      Git.checkout(root_branch_name)
+      branch_from = determine_root_branch_name
+      Git.checkout(branch_from)
       root_origin = Git.get_remote
-      remote_branch_name = [root_origin, root_branch_name].join('/')
-      print "Creating branch for story with branch name #{branch_name} from #{remote_branch_name}... "
+      remote_branch_name = [root_origin, branch_from].join('/')
+      print "Creating branch for story with branch name #{branch_name} from #{branch_from}... "
       Git.pull_remote
-      Git.create_branch(branch_name, remote_branch_name, track: true)
+      Git.create_branch(branch_name, branch_from, track: true)
       Git.checkout(branch_name)
-      Git.set_config('root-branch', root_branch_name, :branch)
-      Git.set_config('root-remote', root_origin, :branch)
+      Git.set_config(KEY_ROOT_BRANCH, branch_from, :branch)
+      Git.set_config(KEY_ROOT_REMOTE, root_origin, :branch)
     end
 
     def merge_to_root!(commit_message = nil, options = {})
@@ -178,6 +180,10 @@ module GithubPivotalFlow
     end
 
     def root_branch_name
+      Git.get_config(KEY_ROOT_BRANCH, :inherited)
+    end
+
+    def determine_root_branch_name
       if user_defined_root_branch_name
         return user_defined_root_branch_name
       end
@@ -291,6 +297,7 @@ module GithubPivotalFlow
     end
 
     def branch_prefix
+      print "hotfix: #{@is_hotfix}"
       if is_hotfix
         prefix = Git.get_config(KEY_HOTFIX_PREFIX, :inherited)
       else
