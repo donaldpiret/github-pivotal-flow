@@ -1,7 +1,7 @@
 # Utilities for dealing with +PivotalTracker::Story+s
 module GithubPivotalFlow
   class Story
-    attr_accessor :pivotal_story, :project, :branch_name, :root_branch_name
+    attr_accessor :pivotal_story, :project, :branch_name, :root_branch_name, :is_hotfix, :user_defined_root_branch_name
 
     # Print a human readable version of a story.  This pretty prints the title,
     # description, and notes for the story.
@@ -38,13 +38,13 @@ module GithubPivotalFlow
     #   * +nil+: offers the user a selection of stories of all types
     # @param [Fixnum] limit The number maximum number of stories the user can choose from
     # @return [PivotalTracker::Story] The Pivotal Tracker story selected by the user
-    def self.select_story(project, filter = nil, limit = 5)
+    def self.select_story(project, filter = nil, limit = 5, options = {})
       if filter =~ /[[:digit:]]/
         story = project.stories.find filter.to_i
       else
         story = find_story project, filter, limit
       end
-      self.new(project, story)
+      self.new(project, story, options = options)
     end
 
     # @param [Project] project the Project for this repo
@@ -54,8 +54,10 @@ module GithubPivotalFlow
       @project = project
       @pivotal_story = pivotal_story
       @branch_name = options.delete(:branch_name)
+      @user_defined_root_branch_name = options[:root_branch_name]
       @branch_suffix = @branch_name.split('-').last if @branch_name
       @branch_suffix ||= nil
+      @is_hotfix = options[:is_hotfix]
     end
 
     def release?
@@ -82,25 +84,42 @@ module GithubPivotalFlow
     end
 
     def create_branch!(options = {})
-      Git.checkout(root_branch_name)
+      branch_from = determine_root_branch_name
+      Git.checkout(branch_from)
       root_origin = Git.get_remote
-      remote_branch_name = [root_origin, root_branch_name].join('/')
+      remote_branch_name = [root_origin, branch_from].join('/')
       print "Creating branch for story with branch name #{branch_name} from #{remote_branch_name}... "
       Git.pull_remote
       Git.create_branch(branch_name, remote_branch_name, track: true)
       Git.checkout(branch_name)
-      Git.set_config('root-branch', root_branch_name, :branch)
-      Git.set_config('root-remote', root_origin, :branch)
+      Git.set_config(KEY_ROOT_BRANCH, branch_from, :branch)
+      Git.set_config(KEY_ROOT_REMOTE, root_origin, :branch)
     end
 
     def merge_to_root!(commit_message = nil, options = {})
-      commit_message = "Merge #{branch_name} to #{root_branch_name}" if commit_message.blank?
+      root_branch = root_branch_name
+      commit_message = "Merge #{branch_name} to #{root_branch}" if commit_message.blank?
       commit_message << "\n\n[#{options[:no_complete] ? '' : 'Completes '}##{id}] "
-      print "Merging #{branch_name} to #{root_branch_name}... "
-      Git.checkout(root_branch_name)
-      Git.pull_remote(root_branch_name)
+      print "Merging #{branch_name} to #{root_branch}... "
+      Git.checkout(root_branch)
+      Git.pull_remote(root_branch)
       Git.merge(branch_name, commit_message: commit_message, no_ff: true)
-      Git.push(root_branch_name)
+      Git.push(root_branch)
+      puts "root: #{root_branch}"
+      puts "master: #{master_branch_name}"
+      if root_branch == master_branch_name
+        commit_message = "Merge #{branch_name} to #{development_branch_name}" if commit_message.blank?
+        commit_message << "\n\n[#{options[:no_complete] ? '' : 'Completes '}##{id}] "
+        print "Merging #{branch_name} to #{development_branch_name}... "
+        Git.checkout(development_branch_name)
+        Git.pull_remote(development_branch_name)
+        if trivial_merge?(development_branch_name)
+          Git.merge(branch_name, commit_message: commit_message, ff: true)
+        else
+          Git.merge(branch_name, commit_message: commit_message, no_ff: true)
+        end
+        Git.push(development_branch_name)
+      end
       self.delete_branch!
       self.cleanup!
     end
@@ -166,8 +185,18 @@ module GithubPivotalFlow
     end
 
     def root_branch_name
+      Git.get_config(KEY_ROOT_BRANCH, :branch)
+    end
+
+    def determine_root_branch_name
+      if user_defined_root_branch_name
+        return user_defined_root_branch_name
+      end
+      if is_hotfix
+        return master_branch_name
+      end
       case story_type
-      when 'chore'
+      when 'chore', 'hotfix'
         master_branch_name
       when 'bug'
         self.labels.include?('hotfix') ? master_branch_name : development_branch_name
@@ -273,15 +302,19 @@ module GithubPivotalFlow
     end
 
     def branch_prefix
-      case story_type
-      when 'feature'
-        prefix = Git.get_config(KEY_FEATURE_PREFIX, :inherited)
-      when 'bug'
-        prefix = labels.include?('hotfix') ? Git.get_config(KEY_HOTFIX_PREFIX, :inherited) : Git.get_config(KEY_FEATURE_PREFIX, :inherited)
-      when 'release'
-        prefix = Git.get_config(KEY_RELEASE_PREFIX, :inherited)
+      if is_hotfix
+        prefix = Git.get_config(KEY_HOTFIX_PREFIX, :inherited)
       else
-        prefix = 'misc/'
+        case story_type
+        when 'feature'
+          prefix = Git.get_config(KEY_FEATURE_PREFIX, :inherited)
+        when 'bug'
+          prefix = labels.include?('hotfix') ? Git.get_config(KEY_HOTFIX_PREFIX, :inherited) : Git.get_config(KEY_FEATURE_PREFIX, :inherited)
+        when 'release'
+          prefix = Git.get_config(KEY_RELEASE_PREFIX, :inherited)
+        else
+          prefix = 'misc/'
+        end
       end
       prefix = "#{prefix.strip}/" unless prefix.strip[-1,1] == '/'
       return prefix.strip
