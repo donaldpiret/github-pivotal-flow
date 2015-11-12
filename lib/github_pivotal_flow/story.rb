@@ -1,7 +1,7 @@
 # Utilities for dealing with +PivotalTracker::Story+s
 module GithubPivotalFlow
   class Story
-    attr_accessor :pivotal_story, :project, :branch_name, :root_branch_name, :user_defined_root_branch_name
+    attr_accessor :pivotal_story, :project, :branch_name, :root_branch_name, :user_defined_root_branch_name, :is_hotfix
 
     # Print a human readable version of a story.  This pretty prints the title,
     # description, and notes for the story.
@@ -38,7 +38,7 @@ module GithubPivotalFlow
     #   * +nil+: offers the user a selection of stories of all types
     # @param [Fixnum] limit The number maximum number of stories the user can choose from
     # @return [PivotalTracker::Story] The Pivotal Tracker story selected by the user
-    def self.select_story(project, filter = nil, limit = 5, root_branch_name = nil)
+    def self.select_story(project, filter = nil, limit = 5, root_branch_name = nil, is_hotfix = false)
       if filter =~ /[[:digit:]]/
         story = project.stories.find filter.to_i
       else
@@ -177,7 +177,10 @@ module GithubPivotalFlow
 
     def root_branch_name
       if user_defined_root_branch_name
-          user_defined_root_branch_name
+        return user_defined_root_branch_name
+      end
+      if is_hotfix
+        return master_branch_name
       end
       case story_type
       when 'chore', 'hotfix'
@@ -286,15 +289,19 @@ module GithubPivotalFlow
     end
 
     def branch_prefix
-      case story_type
-      when 'feature'
-        prefix = Git.get_config(KEY_FEATURE_PREFIX, :inherited)
-      when 'bug'
-        prefix = labels.include?('hotfix') ? Git.get_config(KEY_HOTFIX_PREFIX, :inherited) : Git.get_config(KEY_FEATURE_PREFIX, :inherited)
-      when 'release'
-        prefix = Git.get_config(KEY_RELEASE_PREFIX, :inherited)
+      if is_hotfix
+        prefix = Git.get_config(KEY_HOTFIX_PREFIX, :inherited)
       else
-        prefix = 'misc/'
+        case story_type
+        when 'feature'
+          prefix = Git.get_config(KEY_FEATURE_PREFIX, :inherited)
+        when 'bug'
+          prefix = labels.include?('hotfix') ? Git.get_config(KEY_HOTFIX_PREFIX, :inherited) : Git.get_config(KEY_FEATURE_PREFIX, :inherited)
+        when 'release'
+          prefix = Git.get_config(KEY_RELEASE_PREFIX, :inherited)
+        else
+          prefix = 'misc/'
+        end
       end
       prefix = "#{prefix.strip}/" unless prefix.strip[-1,1] == '/'
       return prefix.strip

@@ -7,6 +7,7 @@ module GithubPivotalFlow
       story = Story.select_story @project, filter
       Story.pretty_print story
       story.request_estimation! if story.unestimated?
+      options[:root_branch] = Git.get_config(KEY_MASTER_BRANCH, :inherited) if filter == 'hotfix'
       story.create_branch! options[:root_branch]
       @configuration.story = story # Tag the branch with story attributes
       Git.add_hook 'prepare-commit-msg', File.join(File.dirname(__FILE__), 'prepare-commit-msg.sh')
