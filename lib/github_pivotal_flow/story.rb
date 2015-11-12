@@ -185,9 +185,7 @@ module GithubPivotalFlow
     end
 
     def root_branch_name
-      root = Git.get_config(KEY_ROOT_BRANCH, :branch)
-      puts "Root branch name #{root}"
-      return root
+      Git.get_config(KEY_ROOT_BRANCH, :branch)
     end
 
     def determine_root_branch_name
