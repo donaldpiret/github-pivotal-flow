@@ -101,9 +101,17 @@ Choose story to start:
 
 ```plain
     $ git start story-id --hotfix
+    OR
+    $ git start story-id -f
 ```
 
-
+### root_branch
+    Will start a branch from the passed in root_branch_name and set it up to merge back to the same branch
+```plain
+    $ git start story-id --root-branch-name=BRANCH_NAME
+    OR
+    $ git start story-id -r BRANCH_NAME
+```
 
 Once a story has been selected by one of the three methods, the command then prompts for the name of the branch to create.
 
