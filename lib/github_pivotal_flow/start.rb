@@ -7,7 +7,7 @@ module GithubPivotalFlow
       story = Story.select_story @project, filter
       Story.pretty_print story
       story.request_estimation! if story.unestimated?
-      story.create_branch!
+      story.create_branch! options[:root_branch]
       @configuration.story = story # Tag the branch with story attributes
       Git.add_hook 'prepare-commit-msg', File.join(File.dirname(__FILE__), 'prepare-commit-msg.sh')
       story.mark_started!
@@ -21,6 +21,7 @@ module GithubPivotalFlow
         opts.banner = "Usage: git start <feature|chore|bug|story_id>"
         opts.on("-t", "--api-token=", "Pivotal Tracker API key") { |k| options[:api_token] = k }
         opts.on("-p", "--project-id=", "Pivotal Tracker project id") { |p| options[:project_id] = p }
+        opts.on("-r", "--root-branch=", "Root branch") { |r| options[:root_branch] = r }
 
         opts.on_tail("-h", "--help", "This usage guide") { put opts.to_s; exit 0 }
       end.parse!(args)

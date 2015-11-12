@@ -1,7 +1,7 @@
 # Utilities for dealing with +PivotalTracker::Story+s
 module GithubPivotalFlow
   class Story
-    attr_accessor :pivotal_story, :project, :branch_name, :root_branch_name
+    attr_accessor :pivotal_story, :project, :branch_name, :root_branch_name, :user_defined_root_branch_name
 
     # Print a human readable version of a story.  This pretty prints the title,
     # description, and notes for the story.
@@ -38,13 +38,13 @@ module GithubPivotalFlow
     #   * +nil+: offers the user a selection of stories of all types
     # @param [Fixnum] limit The number maximum number of stories the user can choose from
     # @return [PivotalTracker::Story] The Pivotal Tracker story selected by the user
-    def self.select_story(project, filter = nil, limit = 5)
+    def self.select_story(project, filter = nil, limit = 5, root_branch_name = nil)
       if filter =~ /[[:digit:]]/
         story = project.stories.find filter.to_i
       else
         story = find_story project, filter, limit
       end
-      self.new(project, story)
+      self.new(project, story, root_branch_name = root_branch_name)
     end
 
     # @param [Project] project the Project for this repo
@@ -54,6 +54,7 @@ module GithubPivotalFlow
       @project = project
       @pivotal_story = pivotal_story
       @branch_name = options.delete(:branch_name)
+      @user_defined_root_branch_name = options[:root_branch_name]
       @branch_suffix = @branch_name.split('-').last if @branch_name
       @branch_suffix ||= nil
     end
@@ -102,6 +103,15 @@ module GithubPivotalFlow
       Git.merge(branch_name, commit_message: commit_message, no_ff: true)
       Git.push(root_branch_name)
       self.delete_branch!
+      if root_branch_name == master_branch_name
+        commit_message = "Merge #{branch_name} to #{development_branch_name}" if commit_message.blank?
+        commit_message << "\n\n[#{options[:no_complete] ? '' : 'Completes '}##{id}] "
+        print "Merging #{branch_name} to #{development_branch_name}... "
+        Git.checkout(development_branch_name)
+        Git.pull_remote(development_branch_name)
+        Git.merge(branch_name, commit_message: commit_message, no_ff: true)
+        Git.push(development_branch_name)
+      end
       self.cleanup!
     end
 
@@ -166,8 +176,11 @@ module GithubPivotalFlow
     end
 
     def root_branch_name
+      if user_defined_root_branch_name
+          user_defined_root_branch_name
+      end
       case story_type
-      when 'chore'
+      when 'chore', 'hotfix'
         master_branch_name
       when 'bug'
         self.labels.include?('hotfix') ? master_branch_name : development_branch_name
