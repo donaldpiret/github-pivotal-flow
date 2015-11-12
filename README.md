@@ -93,6 +93,15 @@ $ git start
 Choose story to start:
 ```
 
+### hotfix
+    Will start a branch from master and set it up to merge back to master and to your develop branch
+
+```plain
+    $ git start story-id --hotfix
+```
+
+
+
 Once a story has been selected by one of the three methods, the command then prompts for the name of the branch to create.
 
 ```plain

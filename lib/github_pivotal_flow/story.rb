@@ -1,7 +1,8 @@
 # Utilities for dealing with +PivotalTracker::Story+s
 module GithubPivotalFlow
   class Story
-    attr_accessor :pivotal_story, :project, :branch_name, :root_branch_name, :user_defined_root_branch_name, :is_hotfix
+    attr_accessor :pivotal_story, :project, :branch_name, :root_branch_name
+    attr :is_hotfix, :user_defined_root_branch_name
 
     # Print a human readable version of a story.  This pretty prints the title,
     # description, and notes for the story.
@@ -44,7 +45,7 @@ module GithubPivotalFlow
       else
         story = find_story project, filter, limit
       end
-      self.new(project, story, root_branch_name = root_branch_name)
+      self.new(project, story, root_branch_name = root_branch_name, is_hotfix = is_hotfix)
     end
 
     # @param [Project] project the Project for this repo
@@ -57,6 +58,7 @@ module GithubPivotalFlow
       @user_defined_root_branch_name = options[:root_branch_name]
       @branch_suffix = @branch_name.split('-').last if @branch_name
       @branch_suffix ||= nil
+      @is_hotfix = options[:is_hotfix]
     end
 
     def release?

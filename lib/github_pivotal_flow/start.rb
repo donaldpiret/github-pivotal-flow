@@ -4,18 +4,15 @@ module GithubPivotalFlow
     def run!
       filter = [@options[:args]].flatten.first
       #TODO: Validate the format of the filter argument
-      story = Story.select_story @project, filter
+      story = Story.select_story(project, filter, root_branch_name = @options[:root_branch], is_hotfix = @options[:hotfix])
       Story.pretty_print story
       story.request_estimation! if story.unestimated?
-      options[:root_branch] = Git.get_config(KEY_MASTER_BRANCH, :inherited) if filter == 'hotfix'
-      story.create_branch! options[:root_branch]
+      story.create_branch!  
       @configuration.story = story # Tag the branch with story attributes
       Git.add_hook 'prepare-commit-msg', File.join(File.dirname(__FILE__), 'prepare-commit-msg.sh')
       story.mark_started!
       return 0
     end
-
-    private
 
     def parse_argv(*args)
       OptionParser.new do |opts|
@@ -23,6 +20,7 @@ module GithubPivotalFlow
         opts.on("-t", "--api-token=", "Pivotal Tracker API key") { |k| options[:api_token] = k }
         opts.on("-p", "--project-id=", "Pivotal Tracker project id") { |p| options[:project_id] = p }
         opts.on("-r", "--root-branch=", "Root branch") { |r| options[:root_branch] = r }
+        opts.on("-f", "--hotfix", "Hotfix") { |h| options[:hotfix] = true }
 
         opts.on_tail("-h", "--help", "This usage guide") { put opts.to_s; exit 0 }
       end.parse!(args)
