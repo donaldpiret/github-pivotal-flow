@@ -97,20 +97,27 @@ module GithubPivotalFlow
     end
 
     def merge_to_root!(commit_message = nil, options = {})
-      commit_message = "Merge #{branch_name} to #{root_branch_name}" if commit_message.blank?
+      root_branch = root_branch_name
+      commit_message = "Merge #{branch_name} to #{root_branch}" if commit_message.blank?
       commit_message << "\n\n[#{options[:no_complete] ? '' : 'Completes '}##{id}] "
-      print "Merging #{branch_name} to #{root_branch_name}... "
-      Git.checkout(root_branch_name)
-      Git.pull_remote(root_branch_name)
+      print "Merging #{branch_name} to #{root_branch}... "
+      Git.checkout(root_branch)
+      Git.pull_remote(root_branch)
       Git.merge(branch_name, commit_message: commit_message, no_ff: true)
-      Git.push(root_branch_name)
-      if root_branch_name == master_branch_name
+      Git.push(root_branch)
+      puts "root: #{root_branch}"
+      puts "master: #{master_branch_name}"
+      if root_branch == master_branch_name
         commit_message = "Merge #{branch_name} to #{development_branch_name}" if commit_message.blank?
         commit_message << "\n\n[#{options[:no_complete] ? '' : 'Completes '}##{id}] "
         print "Merging #{branch_name} to #{development_branch_name}... "
         Git.checkout(development_branch_name)
         Git.pull_remote(development_branch_name)
-        Git.merge(branch_name, commit_message: commit_message, no_ff: true)
+        if trivial_merge?(development_branch_name)
+          Git.merge(branch_name, commit_message: commit_message, ff: true)
+        else
+          Git.merge(branch_name, commit_message: commit_message, no_ff: true)
+        end
         Git.push(development_branch_name)
       end
       self.delete_branch!
@@ -178,7 +185,9 @@ module GithubPivotalFlow
     end
 
     def root_branch_name
-      Git.get_config(KEY_ROOT_BRANCH, :branch)
+      root = Git.get_config(KEY_ROOT_BRANCH, :branch)
+      puts "Root branch name #{root}"
+      return root
     end
 
     def determine_root_branch_name
