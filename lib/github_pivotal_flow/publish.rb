@@ -8,12 +8,10 @@ module GithubPivotalFlow
       fail("Could not find story associated with branch") unless story
       Git.clean_working_tree?
       Git.push(story.branch_name, set_upstream: true)
-      unless story.release?
-        print "Creating pull-request on Github... "
-        pull_request_params = story.params_for_pull_request.merge(project: @configuration.project)
-        @configuration.github_client.create_pullrequest(pull_request_params)
-        puts 'OK'
-      end
+      print "Creating pull-request on Github... "
+      pull_request_params = story.params_for_pull_request.merge(project: @configuration.project)
+      @configuration.github_client.create_pullrequest(pull_request_params)
+      puts 'OK'
       return 0
     end
 

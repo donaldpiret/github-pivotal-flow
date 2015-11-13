@@ -24,11 +24,14 @@ $ gem install github-pivotal-flow
 The typical workflow looks something like the following:
 
 ```plain
-$ git start       # Creates branch from your [development] branch and starts story
+$ git start             # Creates branch from your [development] branch and starts story
+$ git start STORY_ID    # Optionally pass the story ID from pivotal
+$ git start STORY_ID -f # If the story is a hotfix, we'll brnach from your [master] branch and start story, then merge to both the [development] and [master] branch on finish
+$ git start STORY_ID -r ROOT_BRANCH_NAME # Optionally pass a root branch name. Common scenario is branching off of a Release branch
 $ git commit ...
 $ git commit ...  # Your existing development process
 $ git commit ...
-$ git publish ... # Push the branch out to origin and open a pull request on github to gather some feedback
+$ git publish ... # Push the branch out to origin and open a pull request on github to gather some feedback. Make sure you have at least one commit (this goes for release branches too)
 $ git finish      # Merges back into the main branch. Pushes to origin, destroys branch and finishes story.
 ```
 
@@ -91,6 +94,23 @@ $ git start
 4. FEATURE Fusce facilisis varius lorem, at tristique sem faucibus in
 5. BUG     Donec iaculis ante neque, ut tempus augue
 Choose story to start:
+```
+
+### hotfix
+    Will start a branch from master and set it up to merge back to master and to your develop branch
+
+```plain
+    $ git start story-id --hotfix
+    OR
+    $ git start story-id -f
+```
+
+### root_branch
+    Will start a branch from the passed in root_branch_name and set it up to merge back to the same branch
+```plain
+    $ git start story-id --root-branch-name=BRANCH_NAME
+    OR
+    $ git start story-id -r BRANCH_NAME
 ```
 
 Once a story has been selected by one of the three methods, the command then prompts for the name of the branch to create.

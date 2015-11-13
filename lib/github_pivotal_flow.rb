@@ -31,6 +31,8 @@ module GithubPivotalFlow
   KEY_RELEASE_PREFIX = 'gitflow.prefix.release'.freeze
   KEY_DEVELOPMENT_BRANCH = 'gitflow.branch.develop'.freeze
   KEY_MASTER_BRANCH = 'gitflow.branch.master'.freeze
+  KEY_ROOT_BRANCH = 'root-branch'.freeze
+  KEY_ROOT_REMOTE = 'root-remote'.freeze
   KEY_GITHUB_USERNAME = 'github.username'.freeze
   KEY_GITHUB_API_TOKEN = 'github.api-token'.freeze
 end
