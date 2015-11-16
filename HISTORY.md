@@ -1,5 +1,8 @@
 # History
 
+## 1.4 UNRELEASED
+* Change the behavior of git finish for hotfixes to merge back to both the master and the develop branch.
+
 ## 1.3
 * Fix an issue with mixed-case ssh URL's for git repositories.
 

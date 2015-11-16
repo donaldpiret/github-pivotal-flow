@@ -48,9 +48,13 @@ module GithubPivotalFlow
     it 'merges the branch back to its root by default' do
       expect(@story).to receive(:release?).and_return(false)
       expect(@story).to receive(:can_merge?).and_return(true)
-      expect(@story).to receive(:merge_to_root!).and_return(nil)
+      expect(@story).to receive(:merge_to_roots!).and_return(nil)
 
       @finish.run!
+    end
+
+    it 'merges the branch back to the development branch as well if this is a hotfix' do
+
     end
 
     it 'merges as a release instead if it is a release branch' do

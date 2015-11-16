@@ -1,7 +1,7 @@
 # Utilities for dealing with +PivotalTracker::Story+s
 module GithubPivotalFlow
   class Story
-    attr_accessor :pivotal_story, :project, :branch_name, :root_branch_name
+    attr_accessor :pivotal_story, :project, :branch_name, :root_branch_names
 
     # Print a human readable version of a story.  This pretty prints the title,
     # description, and notes for the story.
@@ -82,6 +82,7 @@ module GithubPivotalFlow
     end
 
     def create_branch!(options = {})
+      root_branch_name = root_branch_names.first
       Git.checkout(root_branch_name)
       root_origin = Git.get_remote
       remote_branch_name = [root_origin, root_branch_name].join('/')
@@ -93,14 +94,16 @@ module GithubPivotalFlow
       Git.set_config('root-remote', root_origin, :branch)
     end
 
-    def merge_to_root!(commit_message = nil, options = {})
-      commit_message = "Merge #{branch_name} to #{root_branch_name}" if commit_message.blank?
-      commit_message << "\n\n[#{options[:no_complete] ? '' : 'Completes '}##{id}] "
-      print "Merging #{branch_name} to #{root_branch_name}... "
-      Git.checkout(root_branch_name)
-      Git.pull_remote(root_branch_name)
-      Git.merge(branch_name, commit_message: commit_message, no_ff: true)
-      Git.push(root_branch_name)
+    def merge_to_roots!(commit_message = nil, options = {})
+      root_branch_names.each do |root_branch_name|
+        commit_message = "Merge #{branch_name}" if commit_message.blank?
+        commit_message << "\n\n[#{options[:no_complete] ? '' : 'Completes '}##{id}] "
+        print "Merging #{branch_name} to #{root_branch_name}... "
+        Git.checkout(root_branch_name)
+        Git.pull_remote(root_branch_name)
+        Git.merge(branch_name, commit_message: commit_message, no_ff: true)
+        Git.push(root_branch_name)
+      end
       self.delete_branch!
       self.cleanup!
     end
@@ -165,14 +168,14 @@ module GithubPivotalFlow
       end
     end
 
-    def root_branch_name
+    def root_branch_names
       case story_type
       when 'chore'
-        master_branch_name
+        [master_branch_name]
       when 'bug'
-        self.labels.include?('hotfix') ? master_branch_name : development_branch_name
+        self.labels.include?('hotfix') ? [master_branch_name, development_branch_name] : [development_branch_name]
       else
-        development_branch_name
+        [development_branch_name]
       end
     end
 
@@ -191,7 +194,7 @@ module GithubPivotalFlow
 
     def params_for_pull_request
       {
-        base: root_branch_name,
+        base: root_branch_names.first,
         head: branch_name,
         title: name,
         body: description,
@@ -207,7 +210,7 @@ module GithubPivotalFlow
     end
 
     def trivial_merge?(to_branch = nil)
-      to_branch ||= root_branch_name
+      to_branch ||= root_branch_names.first
       root_tip = Shell.exec "git rev-parse #{to_branch}"
       common_ancestor = Shell.exec "git merge-base #{to_branch} #{branch_name}"
       if root_tip != common_ancestor

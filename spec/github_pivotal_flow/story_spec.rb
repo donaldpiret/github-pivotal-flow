@@ -206,5 +206,30 @@ module GithubPivotalFlow
         end
       end
     end
+
+    describe '#merge_to_roots!' do
+      context 'with a hotfix story' do
+        before do
+          allow(@pivotal_story).to receive(:story_type).and_return('bug')
+          allow(@pivotal_story).to receive(:id).and_return('123456')
+          allow(@pivotal_story).to receive(:name).and_return('fixall')
+          allow(@pivotal_story).to receive(:labels).and_return('hotfix')
+          @story = GithubPivotalFlow::Story.new(@project, @pivotal_story)
+          allow(@story).to receive(:branch_prefix).and_return('hotfix/')
+          allow(@story).to receive(:branch_name).and_return('hotfix/fixall')
+          allow(@story).to receive(:trivial_merge?).and_return(true)
+
+          allow(@story).to receive(:master_branch_name).and_return('master')
+          allow(@story).to receive(:development_branch_name).and_return('development')
+        end
+
+        it 'merges back to both the master and the develop branch' do
+          expect(Git).to receive(:push).with('master').and_return(nil)
+          expect(Git).to receive(:push).with('development').and_return(nil)
+
+          @story.merge_to_roots!
+        end
+      end
+    end
   end
 end

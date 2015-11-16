@@ -12,7 +12,7 @@ module GithubPivotalFlow
       if story.release?
         story.merge_release!(commit_message, @options)
       else
-        story.merge_to_root!(commit_message, @options)
+        story.merge_to_roots!(commit_message, @options)
       end
       return 0
     end
