@@ -119,6 +119,14 @@ module GithubPivotalFlow
         expect(project.owner).to eq('roomorama')
         expect(project.name).to eq('github-pivotal-flow')
       end
+
+      it 'supports working with git urls with uppercase letters from the configuration' do
+        expect(Git).to receive(:get_remote).and_return('origin')
+        expect(Git).to receive(:get_config).with('remote.origin.url').and_return('git@github.com:Roomorama/Github-Pivotal-Flow.git')
+        project = @configuration.project
+        expect(project.owner).to eq('Roomorama')
+        expect(project.name).to eq('Github-Pivotal-Flow')
+      end
     end
   end
 end

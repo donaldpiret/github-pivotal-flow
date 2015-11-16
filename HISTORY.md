@@ -1,5 +1,8 @@
 # History
 
+## 1.3
+* Fix an issue with mixed-case ssh URL's for git repositories.
+
 ## 1.2
 * Changed the behavior of Story#merge_to_root! so that it performs non-ff merges and includes the proper commit message to close a story on Pivotal.
 
